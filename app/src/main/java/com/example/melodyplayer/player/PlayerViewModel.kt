@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import android.net.Uri
+
 
 class PlayerViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -102,19 +104,22 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
             // Stop current playback
             player.stop()
 
-            // Set new media item
-            val mediaItem = MediaItem.fromUri(song.audioUrl)
-            player.setMediaItem(mediaItem)
+            val context = getApplication<Application>().applicationContext
 
-            // Prepare and play
+            // 👉 Test: luôn phát file local trong res/raw
+            val uri = Uri.parse("android.resource://${context.packageName}/raw/vung_la_me_bay")
+            val mediaItem = MediaItem.fromUri(uri)
+
+            player.setMediaItem(mediaItem)
             player.prepare()
             player.playWhenReady = true
 
-            Log.d(TAG, "✅ Media item set and preparing...")
+            Log.d(TAG, "✅ Media item set from raw resource and playing...")
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error playing song: ${e.message}", e)
         }
     }
+
 
     fun togglePlayPause() {
         Log.d(TAG, "🎛️ Toggle Play/Pause - Current: ${player.isPlaying}")
