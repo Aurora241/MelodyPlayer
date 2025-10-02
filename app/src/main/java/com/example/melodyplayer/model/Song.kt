@@ -1,4 +1,4 @@
-package com.example.melodyplayer.home
+package com.example.melodyplayer.model
 
 data class Song(
     val title: String = "",

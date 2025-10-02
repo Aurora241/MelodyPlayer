@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.myapplication"
+    namespace = "com.example.melodyplayer"
     compileSdk = 34   // ⚠️ nên dùng 34 (API 36 chưa stable, dễ lỗi)
 
     defaultConfig {
