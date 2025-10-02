@@ -1,0 +1,32 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Nền tròn gradient tím -->
+    <path
+        android:pathData="M54,0 A54,54 0 1,1 53.9,0z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="54"
+                android:centerY="54"
+                android:gradientRadius="54">
+                <item android:offset="0.0" android:color="#FF9C27B0"/> <!-- Hồng tím sáng -->
+                <item android:offset="0.7" android:color="#FF7B1FA2"/> <!-- Tím trung -->
+                <item android:offset="1.0" android:color="#FF4A148C"/> <!-- Tím đậm -->
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Icon tai nghe 🎧 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,28
+                          c-11,0 -20,9 -20,20v20c0,5.5 4.5,10 10,10h2v-16h-4V48
+                          c0,-6.6 5.4,-12 12,-12s12,5.4 12,12v14h-4v16h2
+                          c5.5,0 10,-4.5 10,-10V48
+                          c0,-11 -9,-20 -20,-20z"/>
+</vector>

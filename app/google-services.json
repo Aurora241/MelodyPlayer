@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "239898892743",
+    "project_id": "melody-player-ddc14",
+    "storage_bucket": "melody-player-ddc14.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:239898892743:android:bb2b1f3369650a34da61e2",
+        "android_client_info": {
+          "package_name": "com.example.myapplication"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6Z9tPaseXqoNtTLJKifXT3n8N2urzIIo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
