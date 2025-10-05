@@ -48,13 +48,13 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         songs = listOf(
-            Song("Bốn chữ lắm", "Trúc Nhân", null, R.raw.bon_chu_lam),
-            Song("Đừng trách câu vì đậm", "Cáp Anh tài", null, R.raw.dung_trach_cau_vi_dam),
-            Song("Em là cô giáo vùng cao", "Sến Hoàng Mỹ Lam", null, R.raw.em_la_co_giao_vung_cao),
-            Song("Ngắm hoa lệ rơi", "Châu Khải Phong", null, R.raw.ngam_hoa_le_roi),
-            Song("Original Me", "Astra Yao", null, R.raw.original_me),
-            Song("Vùng lá me bay", "Như Quỳnh", null, R.raw.vung_la_me_bay),
-            Song("Xin lỗi người anh yêu", "Châu Khải Phong", null, R.raw.xin_loi_nguoi_anh_yeu)
+            Song("Bốn chữ lắm", "Trúc Nhân", null, "bon_chu_lam"),
+            Song("Đừng trách câu vì đậm", "Cáp Anh tài", null, "dung_trach_cau_vi_dam"),
+            Song("Em là cô giáo vùng cao", "Sến Hoàng Mỹ Lam", null, "em_la_co_giao_vung_cao"),
+            Song("Ngắm hoa lệ rơi", "Châu Khải Phong", null, "ngam_hoa_le_roi"),
+            Song("Original Me", "Astra Yao", null, "original_me"),
+            Song("Vùng lá me bay", "Như Quỳnh", null, "vung_la_me_bay"),
+            Song("Xin lỗi người anh yêu", "Châu Khải Phong", null, "xin_loi_nguoi_anh_yeu")
         )
         isLoading = false
     }
