@@ -45,6 +45,9 @@ fun MusicPlayerScreen(
     val repeatMode by playerVM.repeatMode.collectAsState()
     val playbackError by playerVM.playbackError.collectAsState()
 
+    // THÊM MỚI: Lắng nghe trạng thái danh sách yêu thích từ ViewModel
+    val favoriteSongs by playerVM.favoriteSongs.collectAsState()
+
     var showPlaylist by remember { mutableStateOf(false) }
     var sliderValue by remember { mutableStateOf(0f) }
     var isSeeking by remember { mutableStateOf(false) }
@@ -150,7 +153,7 @@ fun MusicPlayerScreen(
                     ) {
                         // Ảnh bìa album
                         AsyncImage(
-                            model = currentSong?.coverUrl ?: "",
+                            model = currentSong?.imageUrl ?: "",
                             contentDescription = "Album Art",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
@@ -286,22 +289,31 @@ fun MusicPlayerScreen(
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
 
             // Bottom section
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp),
+                    .padding(horizontal = 32.dp, vertical = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                // TÌM VÀ THAY THẾ TOÀN BỘ IconButton YÊU THÍCH CŨ BẰNG ĐOẠN NÀY
+                val isFavorite = currentSong?.let { "${it.title}||${it.artist}" in favoriteSongs } == true
+
                 IconButton(
-                    onClick = { /* Add to favorites */ },
+                    onClick = {
+                        currentSong?.let { playerVM.toggleFavorite(it) }
+                    },
                     modifier = Modifier
                         .size(48.dp)
                         .background(Color.White.copy(alpha = 0.1f), CircleShape)
                 ) {
-                    Icon(Icons.Default.FavoriteBorder, null, tint = Color.White)
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Favorite",
+                        tint = if (isFavorite) Color(0xFF1DB954) else Color.White
+                    )
                 }
             }
         }
@@ -316,7 +328,10 @@ fun MusicPlayerScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .background(Color(0xFF1E1E1E), RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                        .background(
+                            Color(0xFF1E1E1E),
+                            RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                        )
                         .padding(16.dp)
                 ) {
                     Row(
@@ -367,7 +382,7 @@ fun PlaylistItemCard(song: Song, isPlaying: Boolean, onClick: () -> Unit) {
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
-                model = song.coverUrl,
+                model = song.imageUrl,
                 contentDescription = null,
                 modifier = Modifier
                     .size(60.dp)

@@ -1,5 +1,6 @@
 package com.example.melodyplayer
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -22,9 +23,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.melodyplayer.auth.AuthScreen
 import com.example.melodyplayer.home.HomeScreen
 import com.example.melodyplayer.navigation.Routes
@@ -33,6 +36,7 @@ import com.example.melodyplayer.player.PlayerViewModel
 import com.example.melodyplayer.playlist.PlaylistScreen
 import com.example.melodyplayer.search.SearchScreen
 import com.example.melodyplayer.settings.SettingsScreen
+import com.example.melodyplayer.ui.screens.CollectionScreen
 import com.example.melodyplayer.ui.theme.MelodyPlayerTheme
 import com.google.firebase.auth.FirebaseAuth
 
@@ -88,6 +92,31 @@ fun MainApp(playerVM: PlayerViewModel) {
         composable(Routes.PLAYLIST_ALL) {
             PlaylistScreen(navController = navController, playerVM = playerVM)
         }
+
+        // ✅ FIX CRASH: chỉ dùng 1 tham số title, JSON lấy từ savedStateHandle
+        composable(
+            route = Routes.COLLECTION + "/{title}",
+            arguments = listOf(
+                navArgument("title") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val title = backStackEntry.arguments?.getString("title")?.let {
+                Uri.decode(it)
+            } ?: "Collection"
+
+            // ✅ Lấy songsJson từ màn trước (HomeScreen)
+            val songsJson = navController.previousBackStackEntry
+                ?.savedStateHandle
+                ?.get<String>("songsJson")
+                ?: "[]"
+
+            CollectionScreen(
+                navController = navController,
+                playerVM = playerVM,
+                title = title,
+                songsJson = songsJson
+            )
+        }
     }
 }
 
@@ -100,7 +129,6 @@ fun FloatingChatBubble() {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Bong bóng chính
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -118,7 +146,6 @@ fun FloatingChatBubble() {
             )
         }
 
-        // Khi bấm bong bóng -> hiển thị view nhỏ
         if (expanded) {
             Card(
                 modifier = Modifier

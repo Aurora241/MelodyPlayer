@@ -7,11 +7,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import androidx.core.content.ContextCompat
-import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
@@ -29,47 +26,18 @@ class PlaybackService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
 
-        // 1️⃣ Tạo ExoPlayer
+        // 1. Tạo ExoPlayer rỗng
         player = ExoPlayer.Builder(this).build()
 
-        // 2️⃣ Tạo danh sách bài hát
-        val songs = listOf(
-            Triple("Bốn chữ lắm", "Trúc Nhân", R.raw.bon_chu_lam),
-            Triple("Đừng trách câu vì đậm", "Cáp Anh Tài", R.raw.dung_trach_cau_vi_dam),
-            Triple("Em là cô giáo vùng cao", "Sên Hoàng Mỹ Lam", R.raw.em_la_co_giao_vung_cao),
-            Triple("Ngắm hoa lệ rơi", "Châu Khải Phong", R.raw.ngam_hoa_le_roi),
-            Triple("Original Me", "Astra Yao", R.raw.original_me),
-            Triple("Vùng lá me bay", "Như Quỳnh", R.raw.vung_la_me_bay),
-            Triple("Xin lỗi người anh yêu", "Châu Khải Phong", R.raw.xin_loi_nguoi_anh_yeu)
-        )
-
-        // 3️⃣ Thêm tất cả bài hát vào player
-        for ((title, artist, resId) in songs) {
-            val uri = Uri.parse("android.resource://${packageName}/$resId")
-            val mediaItem = MediaItem.Builder()
-                .setUri(uri)
-                .setMediaMetadata(
-                    MediaMetadata.Builder()
-                        .setTitle(title)
-                        .setArtist(artist)
-                        .build()
-                )
-                .build()
-            player.addMediaItem(mediaItem)
-        }
-
-        player.prepare()
-        player.play()
-
-        // 4️⃣ Tạo MediaSession
+        // 2. Tạo MediaSession
         mediaSession = MediaSession.Builder(this, player)
             .setId("MelodyPlayerSession")
             .build()
 
-        // 5️⃣ Tạo Notification Channel
+        // 3. Tạo Notification Channel
         createNotificationChannel()
 
-        // 6️⃣ Tạo PlayerNotificationManager
+        // 4. Cấu hình PlayerNotificationManager
         notificationManager = PlayerNotificationManager.Builder(
             this,
             NOTIFICATION_ID,
@@ -78,10 +46,10 @@ class PlaybackService : MediaSessionService() {
             .setMediaDescriptionAdapter(object : PlayerNotificationManager.MediaDescriptionAdapter {
                 override fun createCurrentContentIntent(player: Player): PendingIntent? {
                     val intent = Intent(this@PlaybackService, MainActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
                     }
                     return PendingIntent.getActivity(
-                        this@PlaybackService,
+                        this@PlaybackService, // Đã sửa lỗi 'PlaybackBảoService' ở đây
                         0,
                         intent,
                         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
@@ -89,7 +57,7 @@ class PlaybackService : MediaSessionService() {
                 }
 
                 override fun getCurrentContentTitle(player: Player): CharSequence {
-                    return player.mediaMetadata.title ?: getString(R.string.app_name)
+                    return player.mediaMetadata.title ?: "Không có tiêu đề"
                 }
 
                 override fun getCurrentContentText(player: Player): CharSequence? {
@@ -107,8 +75,11 @@ class PlaybackService : MediaSessionService() {
                     notification: Notification,
                     ongoing: Boolean
                 ) {
-                    if (ongoing) startForeground(notificationId, notification)
-                    else stopForeground(STOP_FOREGROUND_DETACH)
+                    if (ongoing) {
+                        startForeground(notificationId, notification)
+                    } else {
+                        stopForeground(STOP_FOREGROUND_DETACH)
+                    }
                 }
 
                 override fun onNotificationCancelled(
@@ -120,13 +91,14 @@ class PlaybackService : MediaSessionService() {
                 }
             })
             .build().apply {
-                setSmallIcon(R.drawable.ic_launcher_foreground)
+                setSmallIcon(R.drawable.ic_launcher_foreground) // ❗️ Đảm bảo bạn có drawable này
                 setUseNextAction(true)
                 setUsePreviousAction(true)
                 setPlayer(player)
             }
     }
 
+    // ✅ ĐÂY LÀ HÀM BẮT BUỘC PHẢI CÓ
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
         return mediaSession
     }
@@ -145,10 +117,10 @@ class PlaybackService : MediaSessionService() {
             val manager = ContextCompat.getSystemService(this, NotificationManager::class.java)
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                getString(R.string.playback_channel_name),
+                getString(R.string.playback_channel_name), // ❗️ Đảm bảo bạn có string này
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = getString(R.string.playback_channel_description)
+                description = getString(R.string.playback_channel_description) // ❗️ Và cả string này
             }
             manager?.createNotificationChannel(channel)
         }

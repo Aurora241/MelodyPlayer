@@ -220,7 +220,7 @@ fun SearchResultItem(song: Song, onSongClick: () -> Unit) {
                 shape = RoundedCornerShape(10.dp)
             ) {
                 AsyncImage(
-                    model = song.coverUrl ?: android.R.drawable.ic_media_play,
+                    model = song.imageUrl ?: android.R.drawable.ic_media_play,
                     contentDescription = song.title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop

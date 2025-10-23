@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services") // ✅ Firebase Google Services
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.10"
 }
 
 android {
@@ -44,11 +45,13 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer:1.4.1")
     implementation("androidx.media3:media3-ui:1.4.1") // nếu dùng UI của Media3
     implementation("androidx.media3:media3-session:1.4.1")
-
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation("io.coil-kt:coil-compose:2.5.0")
+
     // Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
@@ -64,7 +67,9 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx:22.3.1")
     implementation("com.google.firebase:firebase-firestore-ktx:24.10.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.7.3")
-
+    implementation("io.coil-kt:coil-compose:2.5.0") // Dùng cho Jetpack Compose
+    // hoặc
+    implementation("io.coil-kt:coil:2.5.0") // Dùng cho View System (XML)
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")
 

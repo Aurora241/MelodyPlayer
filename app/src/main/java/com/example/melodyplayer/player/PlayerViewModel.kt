@@ -1,3 +1,5 @@
+@file:OptIn(androidx.media3.common.util.UnstableApi::class)
+
 package com.example.melodyplayer.player
 
 import android.app.Application
@@ -23,6 +25,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.guava.await
 import kotlin.math.max
 
@@ -36,6 +39,13 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
     private var positionJob: Job? = null
 
     private val mediaIdToSong = mutableMapOf<String, Song>()
+
+    // --- TÍCH HỢP TÍNH NĂNG YÊU THÍCH (Bắt đầu) ---
+    private val favoritesDataStore = FavoritesDataStore(context) // ❗️ Hãy chắc chắn bạn có file FavoritesDataStore.kt này
+
+    private val _favoriteSongs = MutableStateFlow<Set<String>>(emptySet())
+    val favoriteSongs: StateFlow<Set<String>> = _favoriteSongs.asStateFlow()
+    // --- TÍCH HỢP TÍNH NĂNG YÊU THÍCH (Kết thúc) ---
 
     private val _playlist = MutableStateFlow<List<Song>>(emptyList())
     val playlist: StateFlow<List<Song>> = _playlist.asStateFlow()
@@ -86,7 +96,33 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
             },
             ContextCompat.getMainExecutor(context)
         )
+
+        // --- TÍCH HỢP TÍNH NĂNG YÊU THÍCH ---
+        // Tải danh sách bài hát yêu thích ngay khi ViewModel được tạo
+        viewModelScope.launch {
+            _favoriteSongs.value = favoritesDataStore.favoriteSongs.first()
+        }
+        // --- TÍCH HỢP TÍNH NĂNG YÊU THÍCH ---
     }
+
+    // --- TÍCH HỢP TÍNH NĂNG YÊU THÍCH ---
+    // Hàm để thêm/xóa bài hát khỏi danh sách yêu thích
+    fun toggleFavorite(song: Song) {
+        viewModelScope.launch {
+            val songKey = "${song.title}||${song.artist}"
+            val currentFavorites = _favoriteSongs.value
+
+            if (currentFavorites.contains(songKey)) {
+                favoritesDataStore.removeFavorite(song)
+            } else {
+                favoritesDataStore.addFavorite(song)
+            }
+
+            // Cập nhật lại StateFlow sau khi thay đổi DataStore
+            _favoriteSongs.value = favoritesDataStore.favoriteSongs.first()
+        }
+    }
+    // --- TÍCH HỢP TÍNH NĂNG YÊU THÍCH ---
 
     fun setPlaylist(songs: List<Song>, startIndex: Int = 0) {
         if (songs.isEmpty()) {
@@ -102,13 +138,16 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
 
             try {
                 val mediaItems = buildMediaItems(songs)
+                if (mediaItems.isEmpty()) {
+                    _playbackError.value = "Không có bài hát hợp lệ nào để phát."
+                    return@launch
+                }
 
                 controller.setMediaItems(mediaItems, safeIndex, 0L)
                 controller.prepare()
                 controller.play()
 
                 _playlist.value = songs
-                _currentSong.value = songs[safeIndex]
                 _playbackError.value = null
             } catch (e: Exception) {
                 Log.e(TAG, "Lỗi khi thiết lập danh sách phát: ${e.message}", e)
@@ -125,9 +164,16 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
             val controller = awaitController() ?: return@launch
             ensureServiceRunning()
             try {
-                controller.seekTo(index, 0L)
-                controller.play()
-                _currentSong.value = songs[index]
+                val mediaIdToSeek = mediaIdToSong.entries.find { it.value == songs[index] }?.key
+                if (mediaIdToSeek != null) {
+                    for (i in 0 until controller.mediaItemCount) {
+                        if (controller.getMediaItemAt(i).mediaId == mediaIdToSeek) {
+                            controller.seekTo(i, 0L)
+                            controller.play()
+                            break
+                        }
+                    }
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Lỗi khi chuyển bài", e)
                 _playbackError.value = "Không thể chuyển bài hát"
@@ -148,7 +194,7 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
     fun nextSong() {
         controller?.let {
             try {
-                it.seekToNextMediaItem()
+                if (it.hasNextMediaItem()) it.seekToNextMediaItem()
             } catch (e: Exception) {
                 Log.e(TAG, "Lỗi khi next", e)
             }
@@ -158,7 +204,7 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
     fun prevSong() {
         controller?.let {
             try {
-                it.seekToPreviousMediaItem()
+                if (it.hasPreviousMediaItem()) it.seekToPreviousMediaItem()
             } catch (e: Exception) {
                 Log.e(TAG, "Lỗi khi prev", e)
             }
@@ -178,9 +224,7 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
     fun toggleShuffle() {
         controller?.let {
             try {
-                val enabled = !it.shuffleModeEnabled
-                it.shuffleModeEnabled = enabled
-                _shuffleEnabled.value = enabled
+                it.shuffleModeEnabled = !it.shuffleModeEnabled
             } catch (e: Exception) {
                 Log.e(TAG, "Lỗi khi toggle shuffle", e)
             }
@@ -196,7 +240,6 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
                     else -> Player.REPEAT_MODE_OFF
                 }
                 it.repeatMode = newMode
-                _repeatMode.value = newMode
             } catch (e: Exception) {
                 Log.e(TAG, "Lỗi khi cycle repeat", e)
             }
@@ -227,19 +270,14 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
                 _isPlaying.value = isPlaying
             }
 
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_IDLE && controllerInstance.playerError != null) {
-                    onPlayerError(controllerInstance.playerError!!)
-                }
-            }
-
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 val song = mediaItem?.mediaId?.let { mediaIdToSong[it] }
                 _currentSong.value = song
             }
 
+            // ✅ THAY ĐỔI 1: Gọi đến hàm đã đổi tên
             override fun onPlayerError(error: PlaybackException) {
-                onPlayerError(error)
+                handlePlaybackError(error) // Sửa lỗi gọi đệ quy (recursion)
             }
 
             override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
@@ -264,7 +302,8 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun onPlayerError(error: PlaybackException) {
+    // ✅ THAY ĐỔI 2: Đổi tên hàm private này
+    private fun handlePlaybackError(error: PlaybackException) {
         Log.e(TAG, "Lỗi phát nhạc: ${error.message}", error)
         _playbackError.value = error.localizedMessage ?: "Đã xảy ra lỗi khi phát nhạc"
     }
@@ -278,64 +317,53 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /**
-     * Xây dựng MediaItems từ raw resources
-     * audioUrl phải là tên file không có đuôi .mp3 (vd: "bon_chu_lam")
-     */
-    /**
-     * Xây dựng MediaItems từ Firestore hoặc từ raw resources
-     * Ưu tiên phát từ raw nếu có, fallback sang audioUrl online nếu có
-     */
     private fun buildMediaItems(songs: List<Song>): List<MediaItem> {
         mediaIdToSong.clear()
 
         return songs.mapIndexedNotNull { index, song ->
-            try {
-                val resId = when {
-                    // Nếu có resId trong model
-                    song.resId != null -> song.resId
+            var finalUri: Uri? = null
 
-                    // Nếu có audioUrl (dạng tên file không đuôi)
-                    !song.audioUrl.isNullOrBlank() -> {
-                        val name = song.audioUrl!!.substringBefore(".").lowercase()
-                        context.resources.getIdentifier(name, "raw", context.packageName)
-                            .takeIf { it != 0 }
-                    }
-
-                    else -> null
+            // Kiểm tra ResId (file raw local)
+            if (!song.resId.isNullOrBlank()) {
+                val resourceId = context.resources.getIdentifier(
+                    song.resId,
+                    "raw",
+                    context.packageName
+                )
+                if (resourceId != 0) {
+                    finalUri = Uri.parse("android.resource://${context.packageName}/$resourceId")
                 }
-
-                val uri = when {
-                    resId != null -> Uri.parse("android.resource://${context.packageName}/$resId")
-                    !song.audioUrl.isNullOrBlank() && song.audioUrl!!.startsWith("http") -> Uri.parse(song.audioUrl)
-                    else -> null
-                }
-
-                if (uri == null) {
-                    Log.e(TAG, "❌ Bỏ qua bài hát '${song.title}' — không tìm thấy file hoặc URL hợp lệ")
-                    return@mapIndexedNotNull null
-                }
-
-                val metadata = MediaMetadata.Builder()
-                    .setTitle(song.title.ifBlank { "Không rõ tên bài" })
-                    .setArtist(song.artist.ifBlank { "Không rõ ca sĩ" })
-                    .setAlbumTitle("Melody Player")
-                    .build()
-
-                val mediaItem = MediaItem.Builder()
-                    .setMediaId("item-$index-${song.title}")
-                    .setUri(uri)
-                    .setMediaMetadata(metadata)
-                    .build()
-
-                mediaIdToSong[mediaItem.mediaId] = song
-                Log.d(TAG, "✅ Tải thành công: ${song.title} (${uri})")
-
-                mediaItem
-            } catch (e: Exception) {
-                Log.e(TAG, "Lỗi khi build MediaItem cho '${song.title}': ${e.message}")
-                null
             }
+
+            // Nếu không có ResId, kiểm tra AudioUrl (link http)
+            if (finalUri == null && !song.audioUrl.isNullOrBlank() && song.audioUrl.startsWith("http")) {
+                finalUri = Uri.parse(song.audioUrl)
+            }
+
+            // Nếu vẫn không có URI hợp lệ, bỏ qua bài hát này
+            if (finalUri == null) {
+                Log.e(TAG, "❌ Bỏ qua bài hát '${song.title}' — không tìm thấy file trong 'raw' hoặc URL hợp lệ.")
+                return@mapIndexedNotNull null
+            }
+
+            // Tạo MediaItem
+            val mediaId = "item-$index-${song.title.hashCode()}"
+            val metadata = MediaMetadata.Builder()
+                .setTitle(song.title.ifBlank { "Không rõ tên bài" })
+                .setArtist(song.artist.ifBlank { "Không rõ ca sĩ" })
+                .setArtworkUri(song.imageUrl?.let { Uri.parse(it) })
+                .build()
+
+            val mediaItem = MediaItem.Builder()
+                .setMediaId(mediaId)
+                .setUri(finalUri)
+                .setMediaMetadata(metadata)
+                .build()
+
+            mediaIdToSong[mediaId] = song
+            Log.d(TAG, "✅ Đã tạo MediaItem cho: '${song.title}' với URI: $finalUri")
+
+            mediaItem
         }
     }
 
