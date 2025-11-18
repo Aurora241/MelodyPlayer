@@ -81,8 +81,24 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     implementation("io.ktor:ktor-client-android:2.3.6")
     implementation("io.ktor:ktor-client-content-negotiation:2.3.6")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.6")
+    // JUnit
+    testImplementation("junit:junit:4.13.2")
+    // AndroidX Test
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
+    // Mockito (optional)
+    testImplementation("org.mockito:mockito-core:5.2.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
+    // For Main dispatcher rule (AndroidX)
+    testImplementation("androidx.test:core:1.5.0")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test:core:1.5.0")
+    implementation("androidx.palette:palette-ktx:1.0.0")
+    implementation("io.coil-kt:coil-compose:2.4.0")
+    implementation("com.squareup.okhttp3:okhttp")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
 }
