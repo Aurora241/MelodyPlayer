@@ -5,10 +5,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -20,6 +21,7 @@ import androidx.navigation.NavController
 import com.example.melodyplayer.model.Song
 import com.example.melodyplayer.navigation.Routes
 import com.example.melodyplayer.player.PlayerViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun CollectionDetailScreen(
@@ -28,6 +30,9 @@ fun CollectionDetailScreen(
     songs: List<Song>,
     playerVM: PlayerViewModel
 ) {
+    var showDeleteDialog by remember { mutableStateOf<Song?>(null) }
+    val scope = rememberCoroutineScope()
+
     Scaffold(
         containerColor = Color(0xFF121212),
         topBar = {
@@ -94,6 +99,8 @@ fun CollectionDetailScreen(
                     .background(Color(0xFF121212))
             ) {
                 items(songs) { song ->
+                    var showMenu by remember { mutableStateOf(false) }
+
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -107,28 +114,144 @@ fun CollectionDetailScreen(
                         shape = MaterialTheme.shapes.medium,
                         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                     ) {
-                        Column(
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(14.dp)
+                                .padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = song.title,
-                                color = Color.White,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 16.sp
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = song.artist,
-                                color = Color(0xFFAAAAAA),
-                                fontSize = 13.sp
-                            )
+                            Column(
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = song.title,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 16.sp
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = song.artist,
+                                    color = Color(0xFFAAAAAA),
+                                    fontSize = 13.sp
+                                )
+                            }
+
+                            // ✅ Menu 3 chấm
+                            Box {
+                                IconButton(onClick = { showMenu = true }) {
+                                    Icon(
+                                        Icons.Default.MoreVert,
+                                        contentDescription = "Menu",
+                                        tint = Color.Gray
+                                    )
+                                }
+
+                                DropdownMenu(
+                                    expanded = showMenu,
+                                    onDismissRequest = { showMenu = false },
+                                    modifier = Modifier.background(Color(0xFF282828))
+                                ) {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(vertical = 4.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.PlayArrow,
+                                                    contentDescription = null,
+                                                    tint = Color.White
+                                                )
+                                                Spacer(Modifier.width(16.dp))
+                                                Text("Phát ngay", color = Color.White)
+                                            }
+                                        },
+                                        onClick = {
+                                            showMenu = false
+                                            playerVM.setPlaylist(songs, songs.indexOf(song))
+                                            navController.navigate(Routes.PLAYER)
+                                        }
+                                    )
+
+                                    Divider(color = Color.Gray.copy(0.2f))
+
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(vertical = 4.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Delete,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFFFF5252)
+                                                )
+                                                Spacer(Modifier.width(16.dp))
+                                                Text("Xóa khỏi bộ sưu tập", color = Color(0xFFFF5252))
+                                            }
+                                        },
+                                        onClick = {
+                                            showMenu = false
+                                            showDeleteDialog = song
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
                 item { Spacer(Modifier.height(60.dp)) }
             }
         }
+    }
+
+    // ✅ Dialog xác nhận xóa bài hát
+    showDeleteDialog?.let { song ->
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = null },
+            containerColor = Color(0xFF282828),
+            shape = RoundedCornerShape(16.dp),
+            title = {
+                Text(
+                    "Xóa bài hát?",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
+                )
+            },
+            text = {
+                Text(
+                    "Bạn có chắc muốn xóa \"${song.title}\" khỏi \"$title\"?",
+                    color = Color.Gray,
+                    fontSize = 14.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            playerVM.removeSongFromCollection(song, title)
+                            showDeleteDialog = null
+                            // ✅ Không cần popBackStack vì UI tự refresh
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFF5252)
+                    ),
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    Text("Xóa", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteDialog = null },
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    Text("Hủy", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
     }
 }

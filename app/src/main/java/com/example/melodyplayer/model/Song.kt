@@ -1,9 +1,9 @@
 package com.example.melodyplayer.model
 
-import kotlinx.serialization.ExperimentalSerializationApi // Thêm dòng import này
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 
-@OptIn(ExperimentalSerializationApi::class) // <-- THÊM DÒNG NÀY ĐỂ HẾT CẢNH BÁO
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class Song(
     // --- Thông tin cơ bản ---
@@ -16,5 +16,8 @@ data class Song(
     val audioUrl: String? = null,  // Dùng cho nhạc online từ một đường link
 
     // --- Ảnh bìa ---
-    val imageUrl: String? = null   // Link ảnh của bài hát
+    val imageUrl: String? = null,   // Link ảnh của bài hát
+
+    // --- Lời bài hát (MỚI) ---
+    val lyrics: String? = null      // Chuỗi chứa lời bài hát (xuống dòng bằng \n)
 )

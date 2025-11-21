@@ -1001,7 +1001,7 @@ private fun FeaturedCard(onClick: () -> Unit) {
                     color = Color.White
                 )
                 Text(
-                    "Synthwave • Electro • Lo-Fi",
+                    "Bộ sưu tập",
                     fontSize = 14.sp,
                     color = Color.White.copy(0.8f)
                 )
@@ -1304,7 +1304,7 @@ private fun String.unaccent(): String {
 
 private fun getDefaultSongs() = listOf(
     Song(
-        title = "Sao Cha Không Về (Bố Già OST)",
+        title = "Điều Cha Chưa Nói (Bố Già OST)",
         artist = "Ali Hoàng Dương",
         resId = "ali_hoang_duong_bo_gia_ost_official_mv",
         imageUrl = "https://i.ytimg.com/vi/TD7sBUigDIU/maxresdefault.jpg"
@@ -1313,7 +1313,7 @@ private fun getDefaultSongs() = listOf(
         title = "Ex's Hate Me",
         artist = "B-Ray x Masew ft. Amee",
         resId = "b_ray_x_masew_ft_amee_official_mv",
-        imageUrl = "https://i.ytimg.com/vi/BxhYw888dPs/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/95ahbau-rJk/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLB98hz7-5PCfsAYn1kDbCih7clncw"
     ),
     // ... (Giữ nguyên danh sách bài hát cũ của bạn ở đây.
     // Mình không copy hết để tránh làm loãng câu trả lời,
@@ -1322,67 +1322,67 @@ private fun getDefaultSongs() = listOf(
         title = "Bước Qua Mùa Cô Đơn",
         artist = "Vũ.",
         resId = "buoc_qua_mua_co_don_vu_official_mv",
-        imageUrl = "https://i.ytimg.com/vi/B1EG31dqaF0/hq720.jpg"
+        imageUrl = "https://i.ytimg.com/vi/n6Pnzi6r9NU/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLAy9f_sNQA9znbmDf5yRRspy4sPPQ"
     ),
     Song(
         title = "Bước Qua Nhau",
         artist = "Vũ.",
         resId = "buoc_qua_nhau_vu_official_mv",
-        imageUrl = "https://i.ytimg.com/vi/yPHoBhEqhKU/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/ixdSsW5n2rI/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLAPXTy7uCa4yJkob3VoYMgQz7ZZmg"
     ),
     Song(
         title = "Bật Tình Yêu Lên",
         artist = "Hòa Minzy x Tăng Duy Tân",
         resId = "bat_tinh_yeu_len_hoa_minzy_x_tang_duy_tan_mv_lyrics",
-        imageUrl = "https://i.ytimg.com/vi/a42p96AYZoE/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/VHjMJeLsI0o/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLCTzn9fTkBWS6Qw_o3Ijec8UeTXtA"
     ),
     Song(
         title = "Bốn Chữ Lắm",
         artist = "Trúc Nhân ft. Trương Thảo Nhi",
         resId = "bon_chu_lam_mv_truc_nhan_truong_thao_nhi_chat_luong_4k",
-        imageUrl = "https://i.ytimg.com/vi/s9gTb2WgenA/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/i724lraI93s/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLD1HCQv3cdC7gCGLkN3RANfnEbBuQ"
     ),
     Song(
         title = "Chiều Hôm Ấy",
         artist = "JayKii",
         resId = "chieu_hom_ay_official_mv",
-        imageUrl = "https://i.ytimg.com/vi/l1JMh1G0g8U/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/SA35ldy92s0/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLAdCYWx9YTjcu5LHF4qo8a1p70Emg"
     ),
     Song(
         title = "Chúng Ta Không Thuộc Về Nhau",
         artist = "Sơn Tùng M-TP",
         resId = "chung_ta_khong_thuoc_ve_nhau_official_music_video_son_tung_m_tp",
-        imageUrl = "https://i.ytimg.com/vi/vWHBPVxVIjc/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/qGRU3sRbaYw/hqdefault.jpg?sqp=-oaymwEnCOADEI4CSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLD9ddrYdz4Ca4o0bvaVlg_9MbCICA"
     ),
     Song(
         title = "Chúng Ta Của Hiện Tại",
         artist = "Sơn Tùng M-TP",
         resId = "chung_ta_cua_hien_tai",
-        imageUrl = "https://i.ytimg.com/vi/psZ1g9fMfeo/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/psZ1g9fMfeo/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLArwEas3XG9S4mabrV72cpc4brzCA"
     ),
     Song(
         title = "Còn Yêu, Đâu Ai Rời Đi",
         artist = "Đức Phúc",
         resId = "con_yeu_dau_ai_roi_di_duc_phuc_official_mv",
-        imageUrl = "https://i.ytimg.com/vi/oZVCI_h8PYc/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/VCYJckDc_fw/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLCPVYIC2_dqkLMXtkCv4qAlck5PlQ"
     ),
     Song(
         title = "Cơn Mưa Ngang Qua",
         artist = "Sơn Tùng M-TP",
         resId = "con_mua_ngang_qua_mtp_son_tung_k",
-        imageUrl = "https://i.ytimg.com/vi/BhFwff96G5g/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/JQwLF3fsGY0/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLD31EBdPuEZxOb37XwAsEJAhrM_Aw"
     ),
     Song(
         title = "Em Của Ngày Hôm Qua",
         artist = "Sơn Tùng M-TP",
         resId = "em_cua_ngay_hom_qua",
-        imageUrl = "https://i.ytimg.com/vi/XOs9FnDIlUM/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/t-cKtOItdhc/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLDQAWziChqNZQU-IEB3LNUpDuo3_A"
     ),
     Song(
         title = "Em Hát Ai Nghe",
         artist = "Orange",
         resId = "em_hat_ai_nghe_official_mv",
-        imageUrl = "https://i.ytimg.com/vi/TlVTfQdWIV8/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/wssbBe_t-r4/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLCZJ-o_GykpWkqOAppL2xsccii7eQ"
     ),
     Song(
         title = "Fake Love x Wolves x Nothing Stopping Me",
@@ -1400,7 +1400,7 @@ private fun getDefaultSongs() = listOf(
         title = "Hơn Cả Yêu",
         artist = "Đức Phúc",
         resId = "hon_ca_yeu_duc_phuc_official_music_video",
-        imageUrl = "https://i.ytimg.com/vi/cwBFu5CSnhA/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/__kGJZ-kPno/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLBixQHNN2NadDU4SeW5e9lxVbms_Q"
     ),
     Song(
         title = "Rồi Mình Kể Nhau Nghe Chuyện Đêm",
@@ -1562,54 +1562,54 @@ private fun getDefaultSongs() = listOf(
         title = "Ta Còn Yêu Nhau",
         artist = "Đức Phúc",
         resId = "ta_con_yeu_nhau_official_mv_story_duc_phuc",
-        imageUrl = "https://i.ytimg.com/vi/Ff6BHbMwdfw/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/oiikgEzTotg/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLCqmrZrthABLI3Nv3C14YyyoGgX_A"
     ),
     Song(
         title = "Thư Chưa Gửi Anh",
         artist = "Hòa Minzy",
         resId = "thu_chua_gui_anh_official_mv_hoa_minzy",
-        imageUrl = "https://i.ytimg.com/vi/K9tOjVBMRts/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/suHyMFtWtFw/hqdefault.jpg?sqp=-oaymwEnCOADEI4CSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLA2eQBy4jXkBEikX3PRon93Ne-6sQ"
     ),
     Song(
         title = "Yêu Được Không",
         artist = "Đức Phúc x ViruSs",
         resId = "yeu_duoc_khong_duc_phuc_x_viruss_official_music_video",
-        imageUrl = "https://i.ytimg.com/vi/NvqfKytRSBA/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/_VGm6brq1aI/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLCJrz2C2pw9_w7FoylLSlFE7LlwGg"
     ),
     Song(
         title = "Chạy Về Khóc Với Anh",
         artist = "ERIK",
         resId = "yeu_duong_kho_qua_thi_chay_ve_khoc_voi_anh_official_music_video_genshin_impact",
-        imageUrl = "https://i.ytimg.com/vi/h0WG0oB6rU0/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/EBpp2VTSI2Q/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLA2m8rZQco8OZKEpFeEZ5gZSkJCjg"
     ),
     Song(
         title = "Về Bên Anh",
         artist = "Jack (G5R)",
         resId = "official_mv_ve_ben_anh_jack_g5r",
-        imageUrl = "https://i.ytimg.com/vi/Q28O3_54VNo/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/fArpx8TRWU8/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLAiShO6fYPQ2TfbaV_M3cvib10BkA"
     ),
     Song(
         title = "Ánh Nắng Của Anh",
         artist = "Đức Phúc",
         resId = "anh_nang_cua_anh_ost_cho_em_den_ngay_mai_duc_phuc_official_mv_nhac_tre_hay_moi_nhat",
-        imageUrl = "https://i.ytimg.com/vi/bVV1OSpS-m4/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/ds_U7Ifvsx4/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLCBOwDjXbms1yYFnPTJm6srH9R9UQ"
     ),
     Song(
         title = "Âm Thầm Bên Em",
         artist = "Sơn Tùng M-TP",
         resId = "am_tham_ben_em",
-        imageUrl = "https://i.ytimg.com/vi/Q0vNZVqh7w8/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/30KI5SuECuc/hqdefault.jpg?sqp=-oaymwEnCOADEI4CSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLCOcVxGpAygoVNZRBVjOSfDruVQSA"
     ),
     Song(
         title = "Đau Nhất Là Lặng Im",
         artist = "ERIK",
         resId = "dau_nhat_la_lang_im_official_music_video",
-        imageUrl = "https://i.ytimg.com/vi/dZAJYUzHPYE/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/D80QnP0iRBo/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLDVdzol-7SMt4bqeej_2iH887HjzA"
     ),
     Song(
         title = "Đông Kiếm Em",
         artist = "Vũ.",
         resId = "dong_kiem_em_vu_original",
-        imageUrl = "https://i.ytimg.com/vi/dDxWOvbdnYY/maxresdefault.jpg"
+        imageUrl = "https://i.ytimg.com/vi/NLBTbCfR-Fg/hq720.jpg?sqp=-oaymwFBCNAFEJQDSFryq4qpAzMIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB8AEB-AH-CYAC0AWKAgwIABABGHIgVCg4MA8=&rs=AOn4CLCIw760FyRwZy1lo-ANjPwSivRxgg"
     )
 )

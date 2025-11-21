@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -23,11 +24,32 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.melodyplayer.model.Song
-import com.example.melodyplayer.navigation.Routes
 import com.example.melodyplayer.player.PlayerViewModel
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.math.abs
+
+// 🎨 Hàm tiện ích: Tạo màu chủ đề dựa trên tên bộ sưu tập
+fun getCollectionThemeColor(collectionName: String): Color {
+    return if (collectionName == "Yêu thích") {
+        Color(0xFF1DB954) // Màu xanh đặc trưng cho Yêu thích
+    } else {
+        // Danh sách màu sắc rực rỡ cho các bộ sưu tập khác
+        val colors = listOf(
+            Color(0xFFFF5252), // Đỏ
+            Color(0xFF448AFF), // Xanh dương
+            Color(0xFFFFAB40), // Cam
+            Color(0xFFE040FB), // Tím
+            Color(0xFF00E5FF), // Cyan
+            Color(0xFFFFD740), // Vàng
+            Color(0xFF69F0AE)  // Xanh mint
+        )
+        // Chọn màu cố định dựa trên HashCode của tên
+        val index = abs(collectionName.hashCode()) % colors.size
+        colors[index]
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,30 +58,29 @@ fun CollectionsScreen(
     playerVM: PlayerViewModel
 ) {
     val collections by playerVM.collections.collectAsState()
-    val favoriteSongs by playerVM.favoriteSongs.collectAsState()
+
+    // State cho các dialog
     var showDeleteDialog by remember { mutableStateOf<String?>(null) }
+    var showAddToCollectionDialog by remember { mutableStateOf<Song?>(null) }
+    var showCreateCollectionDialog by remember { mutableStateOf(false) } // State tạo mới
+
     val scope = rememberCoroutineScope()
 
-    // ✅ Đảm bảo có bộ sưu tập "Yêu thích" và đồng bộ bài hát yêu thích
-    LaunchedEffect(Unit) {
-        playerVM.ensureCollectionExists("Yêu thích")
-        favoriteSongs.forEach { fav ->
-            val parts = fav.split("||")
-            if (parts.size >= 2) {
-                val song = Song(
-                    title = parts[0],
-                    artist = parts[1],
-                    imageUrl = null,
-                    audioUrl = null,
-                    resId = null
-                )
-                playerVM.addSongToCollection(song, "Yêu thích")
-            }
-        }
-    }
+    // ❌ ĐÃ XÓA KHỐI LaunchedEffect GÂY LỖI HỒI SINH BỘ SƯU TẬP TẠI ĐÂY
 
     Scaffold(
-        containerColor = Color(0xFF121212)
+        containerColor = Color(0xFF121212),
+        // ✅ Nút Floating Action Button để tạo bộ sưu tập mới
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showCreateCollectionDialog = true },
+                containerColor = Color(0xFF1DB954),
+                contentColor = Color.White,
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Tạo bộ sưu tập mới")
+            }
+        }
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -73,7 +94,7 @@ fun CollectionsScreen(
                         .fillMaxWidth()
                         .height(280.dp)
                 ) {
-                    // Gradient nền xanh lá - đen
+                    // Gradient nền
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -167,7 +188,7 @@ fun CollectionsScreen(
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "Thêm bài hát yêu thích vào bộ sưu tập\nđể dễ dàng tìm kiếm và phát nhạc",
+                                "Bấm nút + để tạo bộ sưu tập mới",
                                 color = Color.Gray,
                                 fontSize = 14.sp,
                                 textAlign = TextAlign.Center
@@ -179,51 +200,30 @@ fun CollectionsScreen(
                 // 📀 Danh sách collection
                 items(collections) { collectionName ->
                     val songCount = playerVM.getSongsInCollection(collectionName).size
+                    val themeColor = getCollectionThemeColor(collectionName)
+
                     CollectionCard(
                         collectionName = collectionName,
                         songCount = songCount,
+                        themeColor = themeColor,
                         onClick = {
-                            val songs: List<Song>
+                            val songs = playerVM.getSongsInCollection(collectionName)
 
-                            // ✅ Nếu là bộ "Yêu thích" thì lấy từ favoriteSongs
-                            if (collectionName == "Yêu thích") {
-                                songs = playerVM.favoriteSongs.value.mapNotNull { fav ->
-                                    val parts = fav.split("||")
-                                    if (parts.size >= 2) {
-                                        Song(
-                                            title = parts[0],
-                                            artist = parts[1],
-                                            imageUrl = null,
-                                            audioUrl = null,
-                                            resId = null
-                                        )
-                                    } else null
+                            // Chỉ cho phép mở nếu danh sách có bài hát (tránh lỗi crash nếu list rỗng)
+                            if (songs.isNotEmpty()) {
+                                val songsJson = Json.encodeToString(songs)
+                                val encodedTitle = Uri.encode(collectionName)
+                                val encodedJson = Uri.encode(songsJson)
+
+                                navController.navigate("collection/$encodedTitle/$encodedJson") {
+                                    launchSingleTop = true
                                 }
-                            } else {
-                                // ✅ Ngược lại thì lấy từ danh sách bộ sưu tập
-                                songs = playerVM.getSongsInCollection(collectionName)
-                            }
-
-                            if (songs.isEmpty()) {
-                                println("⚠️ Bộ '$collectionName' trống.")
-                                return@CollectionCard
-                            }
-
-                            val songsJson = Json.encodeToString(songs)
-                            val encodedTitle = Uri.encode(collectionName)
-                            val encodedJson = Uri.encode(songsJson)
-
-                            // ✅ Điều hướng đúng route chi tiết
-                            navController.navigate("collection/$encodedTitle/$encodedJson") {
-                                launchSingleTop = true
                             }
                         },
                         onDelete = {
                             showDeleteDialog = collectionName
                         }
                     )
-
-
                 }
 
                 item {
@@ -231,6 +231,80 @@ fun CollectionsScreen(
                 }
             }
         }
+    }
+
+    // ✅ Dialog Tạo Bộ Sưu Tập Mới
+    if (showCreateCollectionDialog) {
+        var newCollectionName by remember { mutableStateOf("") }
+        var errorText by remember { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = { showCreateCollectionDialog = false },
+            containerColor = Color(0xFF282828),
+            shape = RoundedCornerShape(16.dp),
+            title = {
+                Text(
+                    "Tạo bộ sưu tập mới",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
+                )
+            },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = newCollectionName,
+                        onValueChange = {
+                            newCollectionName = it
+                            errorText = ""
+                        },
+                        label = { Text("Tên bộ sưu tập") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF1DB954),
+                            unfocusedBorderColor = Color.Gray,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedLabelColor = Color(0xFF1DB954),
+                            unfocusedLabelColor = Color.Gray
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (errorText.isNotEmpty()) {
+                        Text(
+                            text = errorText,
+                            color = Color(0xFFFF5252),
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newCollectionName.isBlank()) {
+                            errorText = "Tên không được để trống"
+                        } else if (collections.contains(newCollectionName)) {
+                            errorText = "Bộ sưu tập đã tồn tại"
+                        } else {
+                            scope.launch {
+                                playerVM.ensureCollectionExists(newCollectionName)
+                                showCreateCollectionDialog = false
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1DB954))
+                ) {
+                    Text("Tạo", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCreateCollectionDialog = false }) {
+                    Text("Hủy", color = Color.White)
+                }
+            }
+        )
     }
 
     // ❌ Dialog xác nhận xóa
@@ -249,7 +323,7 @@ fun CollectionsScreen(
             },
             text = {
                 Text(
-                    "Bạn có chắc muốn xóa \"$collectionName\"?\nHành động này không thể hoàn tác.",
+                    "Bạn có chắc muốn xóa \"$collectionName\"?\nTất cả bài hát trong danh sách này sẽ bị xóa khỏi bộ sưu tập.",
                     color = Color.Gray,
                     fontSize = 14.sp
                 )
@@ -278,12 +352,87 @@ fun CollectionsScreen(
             }
         )
     }
+
+    // ➕ Dialog thêm vào bộ sưu tập
+    showAddToCollectionDialog?.let { song ->
+        AddToCollectionDialog(
+            song = song,
+            collections = collections,
+            onDismiss = { showAddToCollectionDialog = null },
+            onAddToCollection = { selectedCollection ->
+                scope.launch {
+                    playerVM.ensureCollectionExists(selectedCollection)
+                    playerVM.addSongToCollection(song, selectedCollection)
+                    showAddToCollectionDialog = null
+                }
+            }
+        )
+    }
+}
+
+// Dialog thêm bài hát
+@Composable
+fun AddToCollectionDialog(
+    song: Song,
+    collections: List<String>,
+    onDismiss: () -> Unit,
+    onAddToCollection: (String) -> Unit
+) {
+    var selectedCollection by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF282828),
+        shape = RoundedCornerShape(16.dp),
+        title = {
+            Text("Thêm vào bộ sưu tập", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp)) {
+                if (collections.isEmpty()) {
+                    Text("Chưa có bộ sưu tập nào.", color = Color.Gray, fontSize = 14.sp)
+                } else {
+                    LazyColumn {
+                        itemsIndexed(collections) { _, collection ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectedCollection = collection }
+                                    .padding(vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = selectedCollection == collection,
+                                    onClick = { selectedCollection = collection },
+                                    colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF1DB954), unselectedColor = Color.Gray)
+                                )
+                                Spacer(Modifier.width(12.dp))
+                                Text(collection, color = Color.White, fontSize = 16.sp)
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { selectedCollection?.let { onAddToCollection(it) } },
+                enabled = selectedCollection != null,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1DB954), disabledContainerColor = Color.Gray.copy(alpha = 0.3f)),
+                shape = RoundedCornerShape(24.dp)
+            ) { Text("Thêm", color = Color.White, fontWeight = FontWeight.Bold) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, shape = RoundedCornerShape(24.dp)) { Text("Hủy", color = Color.White, fontWeight = FontWeight.Bold) }
+        }
+    )
 }
 
 @Composable
 fun CollectionCard(
     collectionName: String,
     songCount: Int,
+    themeColor: Color,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -303,6 +452,7 @@ fun CollectionCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Icon Box
             Box(
                 modifier = Modifier
                     .size(60.dp)
@@ -310,9 +460,9 @@ fun CollectionCard(
                     .background(
                         Brush.radialGradient(
                             colors = listOf(
-                                Color(0xFF1ED760),
-                                Color(0xFF1DB954),
-                                Color(0xFF169C46)
+                                themeColor.copy(alpha = 0.8f),
+                                themeColor,
+                                themeColor.copy(alpha = 0.5f)
                             )
                         )
                     ),
@@ -344,6 +494,9 @@ fun CollectionCard(
                 )
             }
 
+            // ❌ ĐÃ XÓA HÌNH TRÁI TIM
+
+            // Menu 3 chấm
             Box {
                 IconButton(onClick = { showMenu = true }) {
                     Icon(
@@ -360,15 +513,8 @@ fun CollectionCard(
                 ) {
                     DropdownMenuItem(
                         text = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(vertical = 4.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.PlayArrow,
-                                    contentDescription = null,
-                                    tint = Color.White
-                                )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.PlayArrow, null, tint = Color.White)
                                 Spacer(Modifier.width(16.dp))
                                 Text("Phát tất cả", color = Color.White)
                             }
@@ -381,17 +527,11 @@ fun CollectionCard(
 
                     Divider(color = Color.Gray.copy(0.2f))
 
+                    // ✅ Nút xóa luôn hiển thị
                     DropdownMenuItem(
                         text = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(vertical = 4.dp)
-                            ) {
-                                Icon(
-                                    Icons.Outlined.Delete,
-                                    contentDescription = null,
-                                    tint = Color(0xFFFF5252)
-                                )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Outlined.Delete, null, tint = Color(0xFFFF5252))
                                 Spacer(Modifier.width(16.dp))
                                 Text("Xóa bộ sưu tập", color = Color(0xFFFF5252))
                             }

@@ -1,11 +1,14 @@
 package com.example.melodyplayer.player
 
+import android.graphics.drawable.BitmapDrawable
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -19,21 +22,21 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import coil.compose.AsyncImage
-import com.example.melodyplayer.model.Song
 import androidx.media3.common.Player
-import kotlinx.coroutines.launch
-import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
+import androidx.palette.graphics.Palette
+import coil.ImageLoader
+import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.request.SuccessResult
-import coil.ImageLoader
-import android.graphics.drawable.BitmapDrawable
-import androidx.palette.graphics.Palette
+import com.example.melodyplayer.model.Song
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,6 +67,7 @@ fun MusicPlayerScreen(
     var vibrantColor by remember { mutableStateOf(Color(0xFF1DB954)) }
 
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     // Extract palette
     LaunchedEffect(currentSong?.imageUrl) {
@@ -151,7 +155,7 @@ fun MusicPlayerScreen(
                 }
             }
 
-            // CENTER SECTION
+            // CENTER SECTION (UPDATED WITH PAGER)
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -160,24 +164,67 @@ fun MusicPlayerScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
-                    Box(
-                        modifier = Modifier
-                            .size(340.dp)
-                            .padding(24.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .shadow(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        AsyncImage(
-                            model = currentSong?.imageUrl ?: "",
-                            contentDescription = "",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
+                    // Pager State cho 2 trang: 0 = Ảnh, 1 = Lời bài hát
+                    val pagerState = rememberPagerState(pageCount = { 2 })
+
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) { page ->
+                        if (page == 0) {
+                            // --- PAGE 0: ALBUM ART ---
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(320.dp)
+                                        .padding(24.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .shadow(24.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    AsyncImage(
+                                        model = currentSong?.imageUrl ?: "",
+                                        contentDescription = "",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                            }
+                        } else {
+                            // --- PAGE 1: LYRICS ---
+                            val lyricsText = "Lời bài hát chưa được cập nhật cho bài hát này."
+                            LyricsView(lyrics = lyricsText)
+                        }
                     }
 
-                    Spacer(Modifier.height(30.dp))
+                    Spacer(Modifier.height(16.dp))
 
+                    // PAGE INDICATOR (Dấu chấm tròn)
+                    Row(
+                        modifier = Modifier
+                            .height(10.dp)
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        repeat(2) { iteration ->
+                            val color = if (pagerState.currentPage == iteration) Color.White else Color.White.copy(alpha = 0.3f)
+                            Box(
+                                modifier = Modifier
+                                    .padding(4.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(color)
+                                    .size(6.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // SONG INFO & TIMER
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
@@ -192,7 +239,7 @@ fun MusicPlayerScreen(
                             LaunchedEffect(Unit) {
                                 while (true) {
                                     currentTime.value = System.currentTimeMillis()
-                                    kotlinx.coroutines.delay(1000)
+                                    delay(1000)
                                 }
                             }
 
@@ -284,13 +331,21 @@ fun MusicPlayerScreen(
 
                 IconButton(
                     onClick = {
-                        currentSong?.let { playerVM.toggleFavorite(it) }
-                        if (!isFavorite) showCollectionDialog = true
+                        currentSong?.let {
+                            if (!isFavorite) {
+                                // Nếu chưa favorite -> Mở dialog chọn Collection
+                                showCollectionDialog = true
+                            } else {
+                                // Nếu đã favorite -> Xóa khỏi favorite
+                                playerVM.toggleFavorite(it)
+                            }
+                        }
                     }
                 ) {
                     Icon(
                         if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         null,
+                        // ✅ Đổi màu trái tim khi active
                         tint = if (isFavorite) vibrantColor else Color.White.copy(0.7f)
                     )
                 }
@@ -356,13 +411,29 @@ fun MusicPlayerScreen(
             )
         }
 
-        // ADD COLLECTION
+        // ✅ ADD COLLECTION DIALOG - LOGIC MỚI
+        // ✅ ADD COLLECTION DIALOG - CẬP NHẬT THÔNG BÁO
         if (showCollectionDialog) {
             AddToCollectionDialog(
                 currentSong = currentSong,
+                playerVM = playerVM,
                 snackbarHostState = snackbarHostState,
                 onDismiss = { showCollectionDialog = false },
-                onAddToCollection = { _, _ ->
+                onAddToCollection = { song, collectionName ->
+                    scope.launch {
+                        // 1. Thêm vào bộ sưu tập đã chọn
+                        playerVM.ensureCollectionExists(collectionName)
+                        playerVM.addSongToCollection(song, collectionName)
+
+                        // 2. Tự động thêm vào "Yêu thích" (để trái tim sáng) - Giữ nguyên logic này
+                        if (collectionName != "Yêu thích") {
+                            playerVM.ensureCollectionExists("Yêu thích")
+                            playerVM.addSongToCollection(song, "Yêu thích")
+                        }
+
+                        // 3.Chỉ hiện tên bộ sưu tập người dùng chọn cho đỡ rối
+                        snackbarHostState.showSnackbar("Đã thêm vào $collectionName")
+                    }
                     showCollectionDialog = false
                 }
             )
@@ -411,6 +482,51 @@ fun MusicPlayerScreen(
                 },
                 containerColor = Color(0xFF1E1E1E)
             )
+        }
+
+        // SNACKBAR HOST
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 80.dp)
+        )
+    }
+}
+
+/* ============================================================
+   NEW: LYRICS VIEW
+   ============================================================ */
+@Composable
+fun LyricsView(
+    lyrics: String?
+) {
+    val lines = lyrics?.split("\n") ?: listOf("Chưa có lời bài hát")
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(340.dp)
+            .padding(horizontal = 24.dp)
+    ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            itemsIndexed(lines) { _, line ->
+                Text(
+                    text = line,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 32.sp
+                    ),
+                    color = Color.White.copy(alpha = 0.9f),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
         }
     }
 }
@@ -511,31 +627,66 @@ fun PlaylistItemCard(song: Song, isPlaying: Boolean, onClick: () -> Unit) {
 @Composable
 fun AddToCollectionDialog(
     currentSong: Song?,
+    playerVM: PlayerViewModel,
     snackbarHostState: SnackbarHostState,
     onDismiss: () -> Unit,
     onAddToCollection: (Song, String) -> Unit
 ) {
-    val collections = listOf("Yêu thích", "Playlist của tôi", "Nhạc buồn", "Nhạc vui", "Tập trung", "Thư giãn")
-    var selected by remember { mutableStateOf<String?>(null) }
+    val collections by playerVM.collections.collectAsState()
+    var selectedCollection by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color(0xFF282828),
+        shape = RoundedCornerShape(16.dp),
         title = {
-            Text("Thêm vào bộ sưu tập", color = Color.White, fontWeight = FontWeight.Bold)
+            Text(
+                "Thêm vào bộ sưu tập",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                collections.forEach {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { selected = it }
-                            .padding(10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(selected = selected == it, onClick = { selected = it })
-                        Spacer(Modifier.width(8.dp))
-                        Text(it, color = Color.White)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp)
+            ) {
+                if (collections.isEmpty()) {
+                    Text(
+                        "Chưa có bộ sưu tập nào.\nĐang tạo bộ sưu tập mặc định...",
+                        color = Color.Gray,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                } else {
+                    LazyColumn {
+                        itemsIndexed(collections) { _, collection ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { selectedCollection = collection }
+                                    .padding(vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = selectedCollection == collection,
+                                    onClick = { selectedCollection = collection },
+                                    colors = RadioButtonDefaults.colors(
+                                        selectedColor = Color(0xFF1DB954),
+                                        unselectedColor = Color.Gray
+                                    )
+                                )
+                                Spacer(Modifier.width(12.dp))
+                                Text(
+                                    collection,
+                                    color = Color.White,
+                                    fontSize = 16.sp
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -543,20 +694,29 @@ fun AddToCollectionDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    if (currentSong != null && selected != null) {
-                        onAddToCollection(currentSong, selected!!)
+                    if (currentSong != null && selectedCollection != null) {
+                        onAddToCollection(currentSong, selectedCollection!!)
+                        // Lưu ý: Việc hiển thị Snackbar đã được chuyển lên hàm onAddToCollection bên ngoài
                     }
-                }
+                },
+                enabled = selectedCollection != null && currentSong != null,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF1DB954),
+                    disabledContainerColor = Color.Gray.copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(24.dp)
             ) {
-                Text("Thêm", color = Color.Black)
+                Text("Thêm", color = Color.White, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Hủy", color = Color.White)
+            TextButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                Text("Hủy", color = Color.White, fontWeight = FontWeight.Bold)
             }
-        },
-        containerColor = Color(0xFF1E1E1E)
+        }
     )
 }
 
@@ -662,11 +822,9 @@ fun SleepTimerDialog(
                                 val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
                                 val currentMinute = calendar.get(Calendar.MINUTE)
 
-                                // Tính toán thời gian còn lại đến giờ đã chọn
                                 var targetHour = selectedHour
                                 var targetMinute = selectedMinute
 
-                                // Nếu thời gian đã chọn đã qua trong ngày, cộng thêm 24 giờ
                                 if (targetHour < currentHour || (targetHour == currentHour && targetMinute <= currentMinute)) {
                                     targetHour += 24
                                 }
@@ -691,15 +849,12 @@ fun SleepTimerDialog(
         containerColor = Color(0xFF1E1E1E)
     )
 }
-/* ============================================================
-   SỬA LẠI HÀM TABBUTTON NHƯ SAU
-   (Chỉ copy 1 hàm này thôi)
-   ============================================================ */
+
 @Composable
 fun RowScope.TabButton(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .weight(1f) // Lệnh này chỉ chạy được nhờ có RowScope ở dòng trên
+            .weight(1f)
             .clickable { onClick() }
             .background(
                 if (selected) Color(0xFF1DB954) else Color.Transparent,
