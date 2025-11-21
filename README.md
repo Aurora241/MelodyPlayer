@@ -119,7 +119,8 @@ home/ - player/ - search/ - playlist/ - otp/ - chatbot/ - setting/
 
 # 👤 Tác giả
 
-Aurora241, Bao
+Aurora241 (Nguyễn Trọng Ngọc Anh)
+Bao0969 (Trần Quốc Bảo)
 =======
 
 Aurora241
