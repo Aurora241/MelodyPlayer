@@ -1,157 +1,78 @@
 package com.example.melodyplayer.otp
 
-import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 object OtpApi {
+    // ⚠️ LƯU Ý: Thay IP này bằng IP thật của server Node.js bạn (ví dụ IP EC2 hoặc 10.0.2.2 nếu chạy local)
+    private const val BASE_URL = "http://3.106.202.66:3000"
 
-    private const val TAG = "OtpApi"
+    private val client = OkHttpClient()
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .build()
+    // 1. Gửi OTP
+    suspend fun sendOtp(email: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val json = JSONObject().apply { put("email", email) }
+                val body = json.toString().toRequestBody("application/json".toMediaType())
+                val request = Request.Builder().url("$BASE_URL/send-otp").post(body).build()
 
-    // QUAN TRỌNG: Thay đổi IP này thành:
-    // - 10.0.2.2:3000 nếu dùng Android Emulator
-    // - IP máy tính thật trên mạng LAN nếu dùng thiết bị thật
-    // - URL domain thật nếu đã deploy lên server
-    private const val BASE_URL = "http://backend.ngocanh648.id.vn:3000"
-
-    fun sendOtp(email: String): Boolean {
-        return try {
-            Log.d(TAG, "========== BẮT ĐẦU GỬI OTP ==========")
-            Log.d(TAG, "Email: $email")
-            Log.d(TAG, "URL: $BASE_URL/send-otp")
-
-            val json = JSONObject().put("email", email).toString()
-            Log.d(TAG, "JSON Request: $json")
-
-            val body = json.toRequestBody("application/json".toMediaType())
-
-            val request = Request.Builder()
-                .url("$BASE_URL/send-otp")
-                .post(body)
-                .build()
-
-            Log.d(TAG, "Đang gửi request...")
-
-            client.newCall(request).execute().use { res ->
-                Log.d(TAG, "Response code: ${res.code}")
-                Log.d(TAG, "Response success: ${res.isSuccessful}")
-
-                if (!res.isSuccessful) {
-                    Log.e(TAG, "Request thất bại với code: ${res.code}")
-                    Log.e(TAG, "Response body: ${res.body?.string()}")
-                    return false
-                }
-
-                val responseBody = res.body?.string()
-                Log.d(TAG, "Response body: $responseBody")
-
-                if (responseBody.isNullOrEmpty()) {
-                    Log.e(TAG, "Response body rỗng")
-                    return false
-                }
-
-                val jsonObj = JSONObject(responseBody)
-                val success = jsonObj.getBoolean("success")
-
-                Log.d(TAG, "Success: $success")
-                Log.d(TAG, "========== KẾT THÚC GỬI OTP ==========")
-
-                success
+                val response = client.newCall(request).execute()
+                response.isSuccessful
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
             }
-        } catch (e: java.net.UnknownHostException) {
-            Log.e(TAG, "❌ LỖI: Không tìm thấy host - Kiểm tra IP/URL server", e)
-            Log.e(TAG, "Đảm bảo server đang chạy và IP đúng")
-            false
-        } catch (e: java.net.ConnectException) {
-            Log.e(TAG, "❌ LỖI: Không kết nối được - Server có đang chạy không?", e)
-            Log.e(TAG, "URL: $BASE_URL/send-otp")
-            false
-        } catch (e: java.net.SocketTimeoutException) {
-            Log.e(TAG, "❌ LỖI: Timeout - Server phản hồi quá lâu", e)
-            false
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ LỖI không xác định khi gửi OTP", e)
-            Log.e(TAG, "Exception type: ${e.javaClass.simpleName}")
-            Log.e(TAG, "Message: ${e.message}")
-            e.printStackTrace()
-            false
         }
     }
 
-    fun verifyOtp(email: String, otp: String): Boolean {
-        return try {
-            Log.d(TAG, "========== BẮT ĐẦU XÁC THỰC OTP ==========")
-            Log.d(TAG, "Email: $email")
-            Log.d(TAG, "OTP: $otp")
-            Log.d(TAG, "URL: $BASE_URL/verify-otp")
-
-            val json = JSONObject()
-                .put("email", email)
-                .put("otp", otp)
-                .toString()
-
-            Log.d(TAG, "JSON Request: $json")
-
-            val body = json.toRequestBody("application/json".toMediaType())
-
-            val request = Request.Builder()
-                .url("$BASE_URL/verify-otp")
-                .post(body)
-                .build()
-
-            Log.d(TAG, "Đang gửi request...")
-
-            client.newCall(request).execute().use { res ->
-                Log.d(TAG, "Response code: ${res.code}")
-                Log.d(TAG, "Response success: ${res.isSuccessful}")
-
-                if (!res.isSuccessful) {
-                    Log.e(TAG, "Request thất bại với code: ${res.code}")
-                    Log.e(TAG, "Response body: ${res.body?.string()}")
-                    return false
+    // 2. Xác thực OTP
+    suspend fun verifyOtp(email: String, otp: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val json = JSONObject().apply {
+                    put("email", email)
+                    put("otp", otp)
                 }
+                val body = json.toString().toRequestBody("application/json".toMediaType())
+                val request = Request.Builder().url("$BASE_URL/verify-otp").post(body).build()
 
-                val responseBody = res.body?.string()
-                Log.d(TAG, "Response body: $responseBody")
-
-                if (responseBody.isNullOrEmpty()) {
-                    Log.e(TAG, "Response body rỗng")
-                    return false
-                }
-
-                val jsonObj = JSONObject(responseBody)
-                val success = jsonObj.getBoolean("success")
-
-                Log.d(TAG, "Success: $success")
-                Log.d(TAG, "========== KẾT THÚC XÁC THỰC OTP ==========")
-
-                success
+                val response = client.newCall(request).execute()
+                val jsonResponse = JSONObject(response.body?.string() ?: "")
+                jsonResponse.optBoolean("success", false)
+            } catch (e: Exception) {
+                false
             }
-        } catch (e: java.net.UnknownHostException) {
-            Log.e(TAG, "❌ LỖI: Không tìm thấy host khi verify OTP", e)
-            false
-        } catch (e: java.net.ConnectException) {
-            Log.e(TAG, "❌ LỖI: Không kết nối được khi verify OTP", e)
-            false
-        } catch (e: java.net.SocketTimeoutException) {
-            Log.e(TAG, "❌ LỖI: Timeout khi verify OTP", e)
-            false
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ LỖI không xác định khi verify OTP", e)
-            Log.e(TAG, "Exception type: ${e.javaClass.simpleName}")
-            Log.e(TAG, "Message: ${e.message}")
-            e.printStackTrace()
-            false
+        }
+    }
+
+    // 3. Đổi mật khẩu (HÀM BẠN ĐANG THIẾU) 👇
+    suspend fun resetPassword(email: String, newPass: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val json = JSONObject().apply {
+                    put("email", email)
+                    put("newPassword", newPass)
+                }
+                val body = json.toString().toRequestBody("application/json".toMediaType())
+                val request = Request.Builder()
+                    .url("$BASE_URL/reset-password") // Gọi đúng API server
+                    .post(body)
+                    .build()
+
+                val response = client.newCall(request).execute()
+                val jsonResponse = JSONObject(response.body?.string() ?: "")
+
+                jsonResponse.optBoolean("success", false)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
         }
     }
 }

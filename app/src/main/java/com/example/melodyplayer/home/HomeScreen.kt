@@ -46,7 +46,7 @@ import com.example.melodyplayer.model.Song
 import com.example.melodyplayer.navigation.Routes
 import com.example.melodyplayer.player.MiniPlayer
 import com.example.melodyplayer.player.PlayerViewModel
-import com.example.melodyplayer.search.VoiceSearchDialog // ĐÃ THÊM IMPORT
+import com.example.melodyplayer.search.VoiceSearchDialog
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -102,9 +102,7 @@ fun HomeScreen(
     }
 
     var showAddDialog by remember { mutableStateOf(false) }
-
-    // --- ĐÃ THÊM: Biến quản lý dialog giọng nói ---
-    var showVoiceDialog by remember { mutableStateOf(false) }
+    var showVoiceDialog by remember { mutableStateOf(false) } // Biến hiển thị Voice Dialog
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -180,12 +178,14 @@ fun HomeScreen(
         )
     }
 
-    // --- ĐÃ THÊM: Hiển thị Dialog Voice Search ---
+    // Dialog tìm kiếm giọng nói
     if (showVoiceDialog) {
         VoiceSearchDialog(
             onDismiss = { showVoiceDialog = false },
             onResult = { result ->
                 searchQuery = result
+                // Có thể tự động bật chế độ search nếu chưa bật
+                isSearching = true
                 showVoiceDialog = false
             }
         )
@@ -201,6 +201,10 @@ fun HomeScreen(
                     navController.navigate(Routes.AUTH) {
                         popUpTo(Routes.HOME) { inclusive = true }
                     }
+                },
+                // [THÊM] Callback điều hướng sang Playlist Screen
+                onNavigateToPlaylist = {
+                    navController.navigate(Routes.PLAYLIST)
                 }
             )
         }
@@ -216,7 +220,6 @@ fun HomeScreen(
                             isSearching = false
                             searchQuery = ""
                         },
-                        // --- ĐÃ THÊM: Sự kiện mở dialog giọng nói ---
                         onVoiceClick = { showVoiceDialog = true }
                     )
                 } else {
@@ -551,7 +554,7 @@ private fun MainTopBar(
 }
 
 // ======================================================
-// SEARCH BAR (ĐÃ SỬA - QUAN TRỌNG)
+// SEARCH BAR (ĐÃ SỬA)
 // ======================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -560,7 +563,7 @@ private fun SearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
     onBackClick: () -> Unit,
-    onVoiceClick: () -> Unit // --- ĐÃ THÊM THAM SỐ NÀY ---
+    onVoiceClick: () -> Unit // Tham số cho nút Mic
 ) {
     TopAppBar(
         title = {
@@ -581,19 +584,18 @@ private fun SearchBar(
                 leadingIcon = {
                     Icon(Icons.Default.Search, null, tint = Color.White.copy(0.7f))
                 },
-                // --- ĐÃ SỬA: Logic hiển thị Micro/Clear ---
                 trailingIcon = {
                     if (query.isNotEmpty()) {
                         IconButton(onClick = { onQueryChange("") }) {
                             Icon(Icons.Default.Clear, null, tint = Color.White)
                         }
                     } else {
-                        // Khi chưa nhập gì -> Hiện Micro
+                        // [ĐÃ SỬA] Nút Mic kích hoạt Voice Search
                         IconButton(onClick = onVoiceClick) {
                             Icon(
                                 Icons.Default.Mic,
                                 null,
-                                tint = Color(0xFF1DB954), // Màu xanh Spotify nổi bật
+                                tint = Color(0xFF1DB954),
                                 modifier = Modifier.size(26.dp)
                             )
                         }
@@ -613,12 +615,16 @@ private fun SearchBar(
 }
 
 // ======================================================
-// DRAWER (GIỮ NGUYÊN)
+// DRAWER (ĐÃ THÊM NÚT TẤT CẢ BÀI HÁT)
 // ======================================================
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ModernDrawer(onItemClick: () -> Unit, onLogout: () -> Unit) {
+private fun ModernDrawer(
+    onItemClick: () -> Unit,
+    onLogout: () -> Unit,
+    onNavigateToPlaylist: () -> Unit // Tham số callback mới
+) {
     ModalDrawerSheet(
         drawerContainerColor = Color(0xFF0A0018),
         drawerContentColor = Color.White
@@ -666,6 +672,24 @@ private fun ModernDrawer(onItemClick: () -> Unit, onLogout: () -> Unit) {
             }
         }
 
+        Spacer(Modifier.height(16.dp))
+
+        // [THÊM] Nút Tất cả bài hát
+        NavigationDrawerItem(
+            label = { Text("Tất cả bài hát", fontSize = 16.sp) },
+            icon = { Icon(Icons.Default.LibraryMusic, null) },
+            selected = false,
+            onClick = {
+                onNavigateToPlaylist()
+                onItemClick()
+            },
+            colors = NavigationDrawerItemDefaults.colors(
+                unselectedTextColor = Color.White,
+                unselectedIconColor = Color(0xFF00FFFF)
+            ),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+        )
+
         // logout
         NavigationDrawerItem(
             label = { Text("Đăng xuất", fontSize = 16.sp) },
@@ -676,7 +700,7 @@ private fun ModernDrawer(onItemClick: () -> Unit, onLogout: () -> Unit) {
                 unselectedTextColor = Color(0xFFFF66FF),
                 unselectedIconColor = Color(0xFFFF66FF)
             ),
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
         )
     }
 }
@@ -1298,8 +1322,7 @@ private fun String.unaccent(): String {
 }
 
 // ======================================================
-// DEFAULT SONGS (ĐÃ RÚT GỌN ĐỂ FILE KHÔNG QUÁ DÀI KHI COPY,
-// BẠN CÓ THỂ DÙNG LẠI LIST CŨ CỦA BẠN NẾU MUỐN GIỮ FULL DATA)
+// DEFAULT SONGS
 // ======================================================
 
 private fun getDefaultSongs() = listOf(
@@ -1315,9 +1338,6 @@ private fun getDefaultSongs() = listOf(
         resId = "b_ray_x_masew_ft_amee_official_mv",
         imageUrl = "https://i.ytimg.com/vi/95ahbau-rJk/hq720.jpg?sqp=-oaymwEnCNAFEJQDSFryq4qpAxkIARUAAIhCGAHYAQHiAQoIGBACGAY4AUAB&rs=AOn4CLB98hz7-5PCfsAYn1kDbCih7clncw"
     ),
-    // ... (Giữ nguyên danh sách bài hát cũ của bạn ở đây.
-    // Mình không copy hết để tránh làm loãng câu trả lời,
-    // nhưng code logic ở trên vẫn hoạt động hoàn hảo với list cũ của bạn)
     Song(
         title = "Bước Qua Mùa Cô Đơn",
         artist = "Vũ.",

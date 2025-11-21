@@ -224,39 +224,13 @@ fun MusicPlayerScreen(
 
                     Spacer(Modifier.height(16.dp))
 
-                    // SONG INFO & TIMER
+                    // SONG INFO
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 24.dp)
                     ) {
-
-                        // Countdown timer display
-                        sleepEndTime?.let { endTime ->
-                            val currentTime = remember { mutableStateOf(System.currentTimeMillis()) }
-
-                            LaunchedEffect(Unit) {
-                                while (true) {
-                                    currentTime.value = System.currentTimeMillis()
-                                    delay(1000)
-                                }
-                            }
-
-                            val remainingMs = endTime - currentTime.value
-                            if (remainingMs > 0) {
-                                val remainingMinutes = (remainingMs / 1000 / 60).toInt()
-                                val remainingSeconds = ((remainingMs / 1000) % 60).toInt()
-                                Text(
-                                    text = "Tắt sau: ${remainingMinutes}:${String.format("%02d", remainingSeconds)}",
-                                    fontSize = 13.sp,
-                                    color = vibrantColor,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Spacer(Modifier.height(8.dp))
-                            }
-                        }
-
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -281,11 +255,17 @@ fun MusicPlayerScreen(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+
+                        // [ĐÃ SỬA] Thêm khoảng đệm ở đây để đẩy chữ lên, tránh bị Slider che
+                        Spacer(Modifier.height(16.dp))
                     }
                 }
             }
 
-            // PROGRESS BAR
+            // [ĐÃ SỬA] Thêm khoảng đệm lớn giữa phần thông tin bài hát và thanh Slider
+            Spacer(Modifier.height(24.dp))
+
+            // PROGRESS BAR & TIMER DISPLAY
             Column(
                 modifier = Modifier.padding(horizontal = 24.dp)
             ) {
@@ -314,6 +294,33 @@ fun MusicPlayerScreen(
                     Text(formatTime(elapsed), color = Color.White.copy(0.7f), fontSize = 12.sp)
                     Text(formatTime(duration), color = Color.White.copy(0.7f), fontSize = 12.sp)
                 }
+
+                // Hiển thị thời gian đếm ngược ở đây - Bên dưới thanh thời gian
+                sleepEndTime?.let { endTime ->
+                    val currentTime = remember { mutableStateOf(System.currentTimeMillis()) }
+
+                    LaunchedEffect(Unit) {
+                        while (true) {
+                            currentTime.value = System.currentTimeMillis()
+                            delay(1000)
+                        }
+                    }
+
+                    val remainingMs = endTime - currentTime.value
+                    if (remainingMs > 0) {
+                        val remainingMinutes = (remainingMs / 1000 / 60).toInt()
+                        val remainingSeconds = ((remainingMs / 1000) % 60).toInt()
+
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Nhạc sẽ tắt sau: ${remainingMinutes}:${String.format("%02d", remainingSeconds)}",
+                            fontSize = 13.sp,
+                            color = vibrantColor,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(16.dp))
@@ -333,10 +340,8 @@ fun MusicPlayerScreen(
                     onClick = {
                         currentSong?.let {
                             if (!isFavorite) {
-                                // Nếu chưa favorite -> Mở dialog chọn Collection
                                 showCollectionDialog = true
                             } else {
-                                // Nếu đã favorite -> Xóa khỏi favorite
                                 playerVM.toggleFavorite(it)
                             }
                         }
@@ -345,7 +350,6 @@ fun MusicPlayerScreen(
                     Icon(
                         if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         null,
-                        // ✅ Đổi màu trái tim khi active
                         tint = if (isFavorite) vibrantColor else Color.White.copy(0.7f)
                     )
                 }
@@ -370,7 +374,6 @@ fun MusicPlayerScreen(
                     Icon(Icons.Default.SkipNext, null, tint = Color.White, modifier = Modifier.size(44.dp))
                 }
 
-                // REPEAT
                 IconButton(onClick = { playerVM.cycleRepeatMode() }) {
                     val icon =
                         if (repeatMode == Player.REPEAT_MODE_ONE) Icons.Default.RepeatOne else Icons.Default.Repeat
@@ -411,8 +414,7 @@ fun MusicPlayerScreen(
             )
         }
 
-        // ✅ ADD COLLECTION DIALOG - LOGIC MỚI
-        // ✅ ADD COLLECTION DIALOG - CẬP NHẬT THÔNG BÁO
+        // ADD COLLECTION DIALOG
         if (showCollectionDialog) {
             AddToCollectionDialog(
                 currentSong = currentSong,
@@ -421,17 +423,13 @@ fun MusicPlayerScreen(
                 onDismiss = { showCollectionDialog = false },
                 onAddToCollection = { song, collectionName ->
                     scope.launch {
-                        // 1. Thêm vào bộ sưu tập đã chọn
                         playerVM.ensureCollectionExists(collectionName)
                         playerVM.addSongToCollection(song, collectionName)
 
-                        // 2. Tự động thêm vào "Yêu thích" (để trái tim sáng) - Giữ nguyên logic này
                         if (collectionName != "Yêu thích") {
                             playerVM.ensureCollectionExists("Yêu thích")
                             playerVM.addSongToCollection(song, "Yêu thích")
                         }
-
-                        // 3.Chỉ hiện tên bộ sưu tập người dùng chọn cho đỡ rối
                         snackbarHostState.showSnackbar("Đã thêm vào $collectionName")
                     }
                     showCollectionDialog = false

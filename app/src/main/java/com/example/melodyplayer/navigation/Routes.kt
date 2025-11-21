@@ -7,9 +7,13 @@ object Routes {
     const val PLAYER = "player"
     const val SEARCH = "search"
     const val SETTINGS = "settings"
-    const val PLAYLIST_ALL = "playlist_all"
 
-    // ✅ Route cơ bản cho Collection (không tham số)
-    const val COLLECTIONS = "collections"   // Màn hình danh sách bộ sưu tập
-    const val COLLECTION = "collection"     // Màn hình chi tiết bộ sưu tập
+    // 👇 Đổi tên này cho khớp với HomeScreen
+    const val PLAYLIST = "playlist"
+
+    // ✅ Route cơ bản
+    const val COLLECTIONS = "collections"
+
+    // 👇 THÊM DÒNG NÀY: Route chi tiết có tham số (để MainActivity hứng dữ liệu)
+    const val COLLECTION_DETAIL = "collection/{title}/{songsJson}"
 }

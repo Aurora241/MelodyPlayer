@@ -2,6 +2,7 @@ package com.example.melodyplayer.otp
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -199,42 +200,55 @@ private fun OtpInputField(
     onOtpChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    BasicTextField(
-        value = otpValue,
-        onValueChange = onOtpChange,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-        decorationBox = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = modifier
-            ) {
-                repeat(6) { index ->
-                    OtpDigitBox(
-                        digit = otpValue.getOrNull(index)?.toString() ?: "",
-                        isFocused = otpValue.length == index
-                    )
-                }
+    // Kích thước điều chỉnh nhỏ lại để vừa mọi màn hình
+    val boxSize = 45.dp
+    val space = 8.dp
+
+    Box(
+        modifier = modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+        // 1. Lớp hiển thị (Các ô vuông)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(space),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            repeat(6) { index ->
+                OtpDigitBox(
+                    digit = otpValue.getOrNull(index)?.toString() ?: "",
+                    isFocused = otpValue.length == index,
+                    size = boxSize
+                )
             }
-        },
-        textStyle = TextStyle(color = Color.Transparent),
-        modifier = Modifier.size(0.dp)
-    )
+        }
+
+        // 2. Lớp nhập liệu (Vô hình nhưng phủ lên trên để nhận cảm ứng)
+        BasicTextField(
+            value = otpValue,
+            onValueChange = onOtpChange,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            modifier = Modifier
+                .matchParentSize() // Phủ kín toàn bộ hàng ô vuông
+                .alpha(0f), // Làm trong suốt hoàn toàn
+            textStyle = TextStyle(color = Color.Transparent),
+            cursorBrush = androidx.compose.ui.graphics.SolidColor(Color.Transparent)
+        )
+    }
 }
 
 @Composable
 private fun OtpDigitBox(
     digit: String,
-    isFocused: Boolean
+    isFocused: Boolean,
+    size: androidx.compose.ui.unit.Dp // Nhận kích thước từ bên ngoài
 ) {
     val borderColor = when {
         digit.isNotEmpty() -> Brush.linearGradient(
             colors = listOf(Color(0xFF00D9FF), Color(0xFFFF00E5))
         )
-
         isFocused -> Brush.linearGradient(
             colors = listOf(Color(0xFF00D9FF), Color(0xFFFF00E5))
         )
-
         else -> Brush.linearGradient(
             colors = listOf(Color(0xFF2A2F4F), Color(0xFF2A2F4F))
         )
@@ -242,20 +256,20 @@ private fun OtpDigitBox(
 
     Box(
         modifier = Modifier
-            .size(52.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .size(size) // Sử dụng kích thước đã giảm
+            .clip(RoundedCornerShape(10.dp)) // Bo góc nhỏ lại một chút cho cân đối
             .background(Color(0xFF1A1F3A))
             .border(
                 width = 2.dp,
                 brush = borderColor,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(10.dp)
             ),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = digit,
             style = TextStyle(
-                fontSize = 24.sp,
+                fontSize = 20.sp, // Giảm font một chút cho vừa ô
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 textAlign = TextAlign.Center

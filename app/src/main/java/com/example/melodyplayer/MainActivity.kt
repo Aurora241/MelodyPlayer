@@ -124,7 +124,7 @@ fun MainApp(playerVM: PlayerViewModel) {
         }
 
         // ---- PLAYLIST ----
-        composable(Routes.PLAYLIST_ALL) {
+        composable(Routes.PLAYLIST) {
             PlaylistScreen(navController = navController, playerVM = playerVM)
         }
 
@@ -135,7 +135,7 @@ fun MainApp(playerVM: PlayerViewModel) {
 
         // ✅ ---- COLLECTION DETAIL (Chi tiết bộ sưu tập) ----
         composable(
-            route = "${Routes.COLLECTION}/{title}/{songsJson}",
+            route = "${Routes.COLLECTIONS}/{title}/{songsJson}",
             arguments = listOf(
                 navArgument("title") { type = NavType.StringType },
                 navArgument("songsJson") { type = NavType.StringType }
