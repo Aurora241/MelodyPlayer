@@ -122,7 +122,3 @@ home/ - player/ - search/ - playlist/ - otp/ - chatbot/ - setting/
 Aurora241 (Nguyễn Trọng Ngọc Anh)
 Bao0969 (Trần Quốc Bảo)
 =======
-
-Aurora241
-Phát triển bởi Kotlin / Compose với sự hỗ trợ của AI kể từ 2024.
->>>>>>> d821ccea4eb7f312094afd3f9b4014ce4966339f
