@@ -3,6 +3,8 @@ package com.example.melodyplayer.home
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.border
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.LinearEasing
@@ -56,6 +58,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.text.Normalizer
 import java.util.*
+import com.google.firebase.auth.userProfileChangeRequest
+import com.google.firebase.storage.FirebaseStorage
 
 // ======================================================
 // DATASTORE
@@ -157,6 +161,8 @@ fun HomeScreen(
 
     // dialog thêm bài hát
     if (showAddDialog) {
+        var isUploading by remember { mutableStateOf(false) } // Biến để hiện vòng xoay loading
+        val firestoreRepo = remember { com.example.melodyplayer.data.FirestoreRepository() } // Gọi Repo
         AddSongDialog(
             onDismiss = { showAddDialog = false },
             onConfirm = { title, artist, audioUri, imageUri ->
@@ -617,23 +623,106 @@ private fun SearchBar(
 // ======================================================
 // DRAWER (ĐÃ THÊM NÚT TẤT CẢ BÀI HÁT)
 // ======================================================
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ModernDrawer(
     onItemClick: () -> Unit,
     onLogout: () -> Unit,
-    onNavigateToPlaylist: () -> Unit // Tham số callback mới
+    onNavigateToPlaylist: () -> Unit
 ) {
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val context = LocalContext.current
+
+    // State quản lý ảnh và tên
+    var avatarUri by remember { mutableStateOf<Uri?>(currentUser?.photoUrl) }
+    var displayName by remember { mutableStateOf(currentUser?.displayName ?: "NeonUser") }
+
+    // State hiển thị loading và dialog
+    var isUploading by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+
+    // Launcher chọn ảnh
+    val avatarLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            // 1. HIỂN THỊ NGAY LẬP TỨC (UI Instant Update)
+            avatarUri = uri
+            isUploading = true // Bắt đầu xoay loading
+
+            // 2. Upload ngầm lên Firebase
+            val storageRef = FirebaseStorage.getInstance().reference.child("avatars/${currentUser?.uid}_${System.currentTimeMillis()}")
+
+            storageRef.putFile(uri)
+                .addOnSuccessListener {
+                    // Upload xong -> Lấy link online
+                    storageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
+                        // Update Profile trên Firebase Auth
+                        val profileUpdates = userProfileChangeRequest { photoUri = downloadUrl }
+                        currentUser?.updateProfile(profileUpdates)?.addOnCompleteListener {
+                            isUploading = false // Tắt loading khi hoàn tất
+                        }
+                    }
+                }
+                .addOnFailureListener {
+                    isUploading = false // Tắt loading nếu lỗi
+                    // Có thể hiện Toast báo lỗi ở đây
+                }
+        }
+    }
+
+    // Dialog đổi tên (Giữ nguyên logic cũ)
+    if (showEditDialog) {
+        var newName by remember { mutableStateOf(displayName) }
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Đổi tên hiển thị", color = Color.White) },
+            text = {
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text("Tên mới") },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF00FFFF),
+                        unfocusedBorderColor = Color.Gray
+                    )
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newName.isNotBlank()) {
+                            val profileUpdates = userProfileChangeRequest { this.displayName = newName }
+                            currentUser?.updateProfile(profileUpdates)?.addOnCompleteListener {
+                                if (it.isSuccessful) {
+                                    displayName = newName
+                                    showEditDialog = false
+                                }
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00FFFF))
+                ) { Text("Lưu", color = Color.Black) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) { Text("Hủy", color = Color.White) }
+            },
+            containerColor = Color(0xFF1A1F3A)
+        )
+    }
+
     ModalDrawerSheet(
         drawerContainerColor = Color(0xFF0A0018),
         drawerContentColor = Color.White
     ) {
-        // header
+        // HEADER
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp)
+                .height(220.dp)
                 .background(
                     Brush.verticalGradient(
                         listOf(Color(0xFFFF00FF), Color(0xFF120028))
@@ -643,29 +732,91 @@ private fun ModernDrawer(
             contentAlignment = Alignment.BottomStart
         ) {
             Column {
+                // --- AVATAR AREA ---
                 Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(60.dp)
-                        .background(Color(0xFF00FFFF), CircleShape),
-                    contentAlignment = Alignment.Center
+                        .size(80.dp)
+                        .clickable { avatarLauncher.launch("image/*") } // Bấm vào box để đổi
                 ) {
+                    // Ảnh đại diện
+                    if (avatarUri != null) {
+                        AsyncImage(
+                            model = avatarUri,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .border(2.dp, Color(0xFF00FFFF), CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        // Ảnh mặc định nếu chưa có
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Gray, CircleShape)
+                                .border(2.dp, Color(0xFF00FFFF), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Person,
+                                null,
+                                tint = Color.White,
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
+                    }
+
+                    // Vòng xoay Loading (Chỉ hiện khi đang upload)
+                    if (isUploading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(80.dp),
+                            color = Color.White,
+                            strokeWidth = 3.dp
+                        )
+                    }
+
+                    // Icon Camera nhỏ (Gợi ý bấm vào)
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .background(Color.Black.copy(0.6f), CircleShape)
+                            .padding(6.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.CameraAlt,
+                            null,
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // --- NAME AREA ---
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { showEditDialog = true }
+                ) {
+                    Text(
+                        text = displayName,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Spacer(Modifier.width(8.dp))
                     Icon(
-                        Icons.Default.Person,
+                        Icons.Default.Edit,
                         null,
-                        tint = Color.Black,
-                        modifier = Modifier.size(32.dp)
+                        tint = Color.White.copy(0.7f),
+                        modifier = Modifier.size(18.dp)
                     )
                 }
-                Spacer(Modifier.height(12.dp))
+
                 Text(
-                    FirebaseAuth.getInstance().currentUser?.email?.split("@")?.first()
-                        ?: "NeonUser",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    "Synthwave Lover 💿",
+                    currentUser?.email ?: "No Email",
                     fontSize = 14.sp,
                     color = Color.White.copy(0.7f)
                 )
@@ -674,7 +825,7 @@ private fun ModernDrawer(
 
         Spacer(Modifier.height(16.dp))
 
-        // [THÊM] Nút Tất cả bài hát
+        // MENU ITEMS (Giữ nguyên)
         NavigationDrawerItem(
             label = { Text("Tất cả bài hát", fontSize = 16.sp) },
             icon = { Icon(Icons.Default.LibraryMusic, null) },
@@ -690,7 +841,6 @@ private fun ModernDrawer(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
         )
 
-        // logout
         NavigationDrawerItem(
             label = { Text("Đăng xuất", fontSize = 16.sp) },
             icon = { Icon(Icons.Default.ExitToApp, null) },
@@ -873,16 +1023,22 @@ private fun MainContent(
         }
 
         item {
+            // [SỬA LỖI] Tạo biến riêng cho danh sách Trending
+            val trendingList = remember(songs) { songs.takeLast(10) }
+
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
             ) {
-                items(songs.takeLast(10)) { song ->
+                // [SỬA LỖI] Dùng itemsIndexed để lấy chính xác vị trí (index) trong list này
+                itemsIndexed(trendingList) { index, song ->
                     SongCard(
                         song = song,
-                        colors = ColorPalette[songs.indexOf(song) % ColorPalette.size],
+                        colors = ColorPalette[index % ColorPalette.size],
                         onClick = {
-                            playerVM.setPlaylist(songs, songs.indexOf(song))
+                            // [QUAN TRỌNG] Truyền đúng danh sách trendingList và index của nó
+                            // Thay vì truyền 'songs' (danh sách tổng)
+                            playerVM.setPlaylist(trendingList, index)
                             navController.navigate(Routes.PLAYER)
                         }
                     )

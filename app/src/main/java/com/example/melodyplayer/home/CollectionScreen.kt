@@ -202,22 +202,25 @@ fun CollectionsScreen(
                     val songCount = playerVM.getSongsInCollection(collectionName).size
                     val themeColor = getCollectionThemeColor(collectionName)
 
+                    // Trong CollectionsScreen.kt
+
                     CollectionCard(
                         collectionName = collectionName,
                         songCount = songCount,
                         themeColor = themeColor,
                         onClick = {
+                            // [SỬA] Lấy danh sách nhạc thật từ ViewModel
                             val songs = playerVM.getSongsInCollection(collectionName)
 
-                            // Chỉ cho phép mở nếu danh sách có bài hát (tránh lỗi crash nếu list rỗng)
-                            if (songs.isNotEmpty()) {
-                                val songsJson = Json.encodeToString(songs)
-                                val encodedTitle = Uri.encode(collectionName)
-                                val encodedJson = Uri.encode(songsJson)
+                            // [SỬA] Lưu danh sách đó vào biến tạm trong ViewModel
+                            playerVM.setSelectedCollectionSongs(songs)
 
-                                navController.navigate("collection/$encodedTitle/$encodedJson") {
-                                    launchSingleTop = true
-                                }
+                            // [SỬA] Chỉ truyền TÊN BỘ SƯU TẬP qua URL
+                            val encodedTitle = Uri.encode(collectionName)
+
+                            // Gọi đến route COLLECTION_DETAIL (đã sửa trong Routes.kt thành "collection/{title}")
+                            navController.navigate("collection/$encodedTitle") {
+                                launchSingleTop = true
                             }
                         },
                         onDelete = {

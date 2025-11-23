@@ -40,12 +40,12 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
 
     private val mediaIdToSong = mutableMapOf<String, Song>()
 
-    // --- DATA STORE CHO TRẠNG THÁI TIM (Lưu trạng thái icon) ---
+    // --- DATA STORE CHO TRẠNG THÁI TIM ---
     private val favoritesDataStore = FavoritesDataStore(context)
     private val _favoriteSongs = MutableStateFlow<Set<String>>(emptySet())
     val favoriteSongs: StateFlow<Set<String>> = _favoriteSongs.asStateFlow()
 
-    // --- SHARED PREFS CHO BỘ SƯU TẬP (Lưu danh sách bài hát) ---
+    // --- SHARED PREFS CHO BỘ SƯU TẬP ---
     private val collectionsPrefs = context.getSharedPreferences("collections", Context.MODE_PRIVATE)
     private val _collections = MutableStateFlow<List<String>>(emptyList())
     val collections: StateFlow<List<String>> = _collections.asStateFlow()
@@ -70,18 +70,17 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
             ContextCompat.getMainExecutor(context)
         )
 
-        // Lắng nghe thay đổi của danh sách yêu thích (Real-time update icon tim)
+        // Lắng nghe thay đổi của danh sách yêu thích
         viewModelScope.launch {
             favoritesDataStore.favoriteSongs.collect {
                 _favoriteSongs.value = it
             }
         }
 
-        // Tải danh sách collections ban đầu
         reloadCollections()
     }
 
-    // ================== QUẢN LÝ COLLECTIONS (ĐÃ FIX LỖI) ==================
+    // ================== QUẢN LÝ COLLECTIONS ==================
 
     private fun reloadCollections() {
         val allKeys = collectionsPrefs.all.keys
@@ -95,7 +94,6 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
         withContext(Dispatchers.IO) {
             val key = "collection_$collectionName"
             if (!collectionsPrefs.contains(key)) {
-                // Dùng commit() để đảm bảo ghi xong mới chạy tiếp
                 collectionsPrefs.edit().putStringSet(key, mutableSetOf()).commit()
                 withContext(Dispatchers.Main) {
                     reloadCollections()
@@ -106,15 +104,14 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun addSongToCollection(song: Song, collectionName: String) {
         withContext(Dispatchers.IO) {
-            ensureCollectionExists(collectionName) // Đảm bảo folder tồn tại
+            ensureCollectionExists(collectionName)
             val key = "collection_$collectionName"
             val currentSongs = collectionsPrefs.getStringSet(key, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
 
-            // ✅ Lưu đầy đủ thông tin để tránh lỗi "bài hát ma"
             val songKey = "${song.title}||${song.artist}||${song.imageUrl ?: ""}||${song.audioUrl ?: ""}||${song.resId ?: ""}"
 
             currentSongs.add(songKey)
-            collectionsPrefs.edit().putStringSet(key, currentSongs).commit() // Dùng commit()
+            collectionsPrefs.edit().putStringSet(key, currentSongs).commit()
 
             withContext(Dispatchers.Main) {
                 reloadCollections()
@@ -144,10 +141,9 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
             val key = "collection_$collectionName"
             val currentSongs = collectionsPrefs.getStringSet(key, mutableSetOf())?.toMutableSet() ?: return@withContext
 
-            // Tìm và xóa bài hát khớp Title và Artist (bất kể link có đổi hay không)
             currentSongs.removeIf { it.startsWith("${song.title}||${song.artist}") }
 
-            collectionsPrefs.edit().putStringSet(key, currentSongs).commit() // Dùng commit()
+            collectionsPrefs.edit().putStringSet(key, currentSongs).commit()
             withContext(Dispatchers.Main) {
                 reloadCollections()
             }
@@ -157,27 +153,15 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun deleteCollection(collectionName: String) {
         withContext(Dispatchers.IO) {
             val key = "collection_$collectionName"
-
-            // 1. Xóa bộ sưu tập khỏi SharedPrefs
             collectionsPrefs.edit().remove(key).commit()
-
-            // 2. Nếu xóa "Yêu thích", cần xóa trạng thái Tim của các bài hát
-            if (collectionName == "Yêu thích") {
-                // Lưu ý: Để xóa sạch DataStore cần logic phức tạp hơn hoặc clear toàn bộ
-                // Ở mức độ đơn giản, ta chấp nhận việc icon Tim vẫn sáng nhưng danh sách mất
-                // Hoặc ta có thể loop qua list hiện tại để remove.
-                // Tuy nhiên, với logic mới, khi user bấm tim lại, nó sẽ tự tạo lại list.
-            }
-
             Log.d(TAG, "Đã xóa bộ sưu tập: $collectionName")
-
             withContext(Dispatchers.Main) {
                 reloadCollections()
             }
         }
     }
 
-    // ================== QUẢN LÝ YÊU THÍCH (LOGIC ĐỒNG BỘ MỚI) ==================
+    // ================== QUẢN LÝ YÊU THÍCH ==================
 
     fun toggleFavorite(song: Song) {
         viewModelScope.launch {
@@ -185,24 +169,28 @@ class PlayerViewModel(app: Application) : AndroidViewModel(app) {
             val currentFavorites = _favoriteSongs.value
 
             if (currentFavorites.contains(songKey)) {
-                // ĐANG LÀ YÊU THÍCH -> MUỐN BỎ
-                // 1. Xóa khỏi DataStore (để icon tim tắt màu)
                 favoritesDataStore.removeFavorite(song)
-                // 2. Xóa khỏi danh sách Collection "Yêu thích" (để mất trong list)
                 removeSongFromCollection(song, "Yêu thích")
             } else {
-                // CHƯA YÊU THÍCH -> MUỐN THÊM
-                // 1. Thêm vào DataStore (để icon tim sáng màu)
                 favoritesDataStore.addFavorite(song)
-                // 2. Thêm vào danh sách Collection "Yêu thích" (để hiện trong list)
                 addSongToCollection(song, "Yêu thích")
             }
-
-            // StateFlow _favoriteSongs sẽ tự update nhờ listener trong init {}
         }
     }
 
-    // ================== PLAYER LOGIC (GIỮ NGUYÊN) ==================
+    // ================== QUẢN LÝ DANH SÁCH CHỌN TẠM (ĐỂ TRUYỀN QUA NAVIGATION) ==================
+    // 👇 ĐOẠN CODE FIX LỖI CRASH ĐƯỢC THÊM VÀO ĐÂY 👇
+
+    private val _selectedCollectionSongs = MutableStateFlow<List<Song>>(emptyList())
+    val selectedCollectionSongs: StateFlow<List<Song>> = _selectedCollectionSongs.asStateFlow()
+
+    fun setSelectedCollectionSongs(songs: List<Song>) {
+        _selectedCollectionSongs.value = songs
+    }
+
+    // 👆 HẾT ĐOẠN CODE FIX LỖI 👆
+
+    // ================== PLAYER LOGIC ==================
 
     private val _playlist = MutableStateFlow<List<Song>>(emptyList())
     val playlist: StateFlow<List<Song>> = _playlist.asStateFlow()

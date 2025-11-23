@@ -100,5 +100,5 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("com.squareup.okhttp3:okhttp")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-
+    implementation("com.google.firebase:firebase-storage-ktx:20.3.0") // Kiểm tra bản mới nhất nếu cần
 }

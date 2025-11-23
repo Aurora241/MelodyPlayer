@@ -135,19 +135,15 @@ fun MainApp(playerVM: PlayerViewModel) {
 
         // ✅ ---- COLLECTION DETAIL (Chi tiết bộ sưu tập) ----
         composable(
-            route = "${Routes.COLLECTIONS}/{title}/{songsJson}",
+            route = "collection_safe/{title}", // Đặt tên route khác để không trùng cái cũ
             arguments = listOf(
-                navArgument("title") { type = NavType.StringType },
-                navArgument("songsJson") { type = NavType.StringType }
+                navArgument("title") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val title = Uri.decode(backStackEntry.arguments?.getString("title") ?: "Bộ sưu tập")
-            val songsJson = Uri.decode(backStackEntry.arguments?.getString("songsJson") ?: "[]")
-
-            val songs = try {
-                Json.decodeFromString<List<Song>>(songsJson)
-            } catch (e: Exception) {
-                emptyList()
+            // Lấy tên bộ sưu tập từ đường dẫn
+            val title = Uri.decode(backStackEntry.arguments?.getString("title") ?: "")
+            val songs = remember(title) {
+                playerVM.getSongsInCollection(title)
             }
 
             CollectionDetailScreen(
@@ -217,7 +213,7 @@ fun FloatingChatBubble() {
             var isLoading by remember { mutableStateOf(false) }
 
             // 🔑 Dán API key Gemini của bạn vào đây
-            val apiKey = "AIzaSyA8BXqqIqTbyEJuhM2LgxrAtjw02rkr6tU"
+            val apiKey = "AIzaSyB-OLn0rPpO1v_vdJu_9YQJ4G_qfev7fhk"
 
             Box(
                 modifier = Modifier
